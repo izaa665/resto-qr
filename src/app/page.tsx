@@ -12,15 +12,15 @@ import {
   Check, 
   Clock, 
   MapPin, 
-  CreditCard, 
-  Banknote, 
   QrCode,
-  FileText
+  ShieldCheck,
+  CheckCircle2,
+  Copy
 } from 'lucide-react';
+import QRCode from 'qrcode';
 import { Category, MenuItem, OrderItem, RestaurantTable, Order } from '@/types/database';
-import { fetchCategories, fetchMenus, fetchTables, createOrder, fetchOrders } from '@/lib/supabase';
+import { fetchCategories, fetchMenus, fetchTables, createOrder, fetchOrders, updateOrderStatus } from '@/lib/supabase';
 import { formatRupiah } from '@/lib/utils';
-import Link from 'next/link';
 
 function CustomerOrderContent() {
   const searchParams = useSearchParams();
@@ -40,12 +40,14 @@ function CustomerOrderContent() {
   
   // Form Info
   const [customerName, setCustomerName] = useState('Ani');
-  const [paymentMethod, setPaymentMethod] = useState<'Tunai' | 'QRIS' | 'Transfer Bank'>('Tunai');
+  const [paymentMethod, setPaymentMethod] = useState<'Tunai' | 'QRIS' | 'Transfer Bank'>('QRIS');
   const [orderNotes, setOrderNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Active Tracking Order
+  // Active Tracking Order & QRIS Modal
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
+  const [isQrisModalOpen, setIsQrisModalOpen] = useState(false);
+  const [qrisDataUrl, setQrisDataUrl] = useState<string>('');
 
   useEffect(() => {
     async function loadData() {
@@ -72,6 +74,23 @@ function CustomerOrderContent() {
       }
     }, 3000);
     return () => clearInterval(interval);
+  }, [activeOrder]);
+
+  // Generate QRIS Data URL when activeOrder or QRIS opens
+  useEffect(() => {
+    if (!activeOrder) return;
+    const qrisPayload = `00020101021226670014ID.GO.QRIS.WWW01189360052300000000000215ID1020261118001520458125303360540${activeOrder.total_amount}5802ID5913RASA NUSANTARA6007JAKARTA62070703A016304${activeOrder.order_number}`;
+    
+    QRCode.toDataURL(qrisPayload, {
+      width: 280,
+      margin: 1,
+      color: {
+        dark: '#0a0a0a',
+        light: '#ffffff',
+      },
+    }).then(url => {
+      setQrisDataUrl(url);
+    }).catch(err => console.error(err));
   }, [activeOrder]);
 
   const totalCartQty = cart.reduce((sum, item) => sum + item.qty, 0);
@@ -147,6 +166,11 @@ function CustomerOrderContent() {
         setActiveOrder(result.order);
         setCart([]);
         setIsCartOpen(false);
+
+        // Jika metode pembayaran QRIS, langsung tampilkan modal QRIS
+        if (paymentMethod === 'QRIS') {
+          setIsQrisModalOpen(true);
+        }
       } else {
         alert(result.error || 'Gagal mengirim pesanan');
       }
@@ -156,6 +180,16 @@ function CustomerOrderContent() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleConfirmQrisPaid = async () => {
+    if (!activeOrder) return;
+    await updateOrderStatus(activeOrder.id, { 
+      payment_status: 'waiting_confirmation', 
+      changed_by: 'Pelanggan QRIS' 
+    });
+    setActiveOrder(prev => prev ? { ...prev, payment_status: 'waiting_confirmation' } : null);
+    setIsQrisModalOpen(false);
   };
 
   const filteredMenus = menus.filter(m => {
@@ -203,36 +237,49 @@ function CustomerOrderContent() {
                 <p className="text-[11px] uppercase tracking-wider font-semibold text-neutral-400">Status Pesanan</p>
                 <p className="font-mono text-xs font-bold text-neutral-900 mt-0.5">{activeOrder.order_number}</p>
               </div>
-              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${
-                activeOrder.payment_status === 'paid'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : 'bg-amber-50 text-amber-700 border-amber-200'
-              }`}>
-                {activeOrder.payment_status === 'paid' ? 'Lunas' : 'Bayar ke Kasir'}
-              </span>
+              <div className="text-right">
+                {activeOrder.payment_status === 'paid' ? (
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md border bg-emerald-50 text-emerald-700 border-emerald-200">
+                    Lunas
+                  </span>
+                ) : activeOrder.payment_status === 'waiting_confirmation' ? (
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md border bg-blue-50 text-blue-700 border-blue-200">
+                    Menunggu Verifikasi Kasir
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setIsQrisModalOpen(true)}
+                    className="text-[11px] font-bold px-2.5 py-1 rounded-md bg-neutral-950 text-white flex items-center gap-1 hover:bg-neutral-800 transition"
+                  >
+                    <QrCode className="w-3 h-3 text-amber-400" />
+                    <span>Bayar via QRIS</span>
+                  </button>
+                )}
+              </div>
             </div>
 
+            {/* Stepper Status */}
             <div className="grid grid-cols-3 gap-2 pt-3">
               <div className={`p-2 rounded-lg text-center border text-[11px] ${
                 activeOrder.order_status === 'pending'
                   ? 'bg-neutral-900 text-white border-neutral-900 font-semibold'
                   : 'bg-neutral-50 text-neutral-500 border-neutral-200'
               }`}>
-                Diterima
+                1. Diterima
               </div>
               <div className={`p-2 rounded-lg text-center border text-[11px] ${
                 activeOrder.order_status === 'processing'
-                  ? 'bg-neutral-900 text-white border-neutral-900 font-semibold'
+                  ? 'bg-blue-600 text-white border-blue-600 font-semibold'
                   : 'bg-neutral-50 text-neutral-500 border-neutral-200'
               }`}>
-                Dimasak
+                2. Dimasak
               </div>
               <div className={`p-2 rounded-lg text-center border text-[11px] ${
                 activeOrder.order_status === 'ready' || activeOrder.order_status === 'completed'
-                  ? 'bg-emerald-700 text-white border-emerald-700 font-semibold'
+                  ? 'bg-emerald-600 text-white border-emerald-600 font-semibold'
                   : 'bg-neutral-50 text-neutral-500 border-neutral-200'
               }`}>
-                Siap Saji
+                3. Siap Saji
               </div>
             </div>
           </div>
@@ -434,17 +481,6 @@ function CustomerOrderContent() {
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('Tunai')}
-                    className={`py-2 px-3 rounded-lg border text-left transition ${
-                      paymentMethod === 'Tunai'
-                        ? 'border-neutral-900 bg-neutral-900 text-white font-semibold'
-                        : 'border-neutral-200 bg-white text-neutral-700'
-                    }`}
-                  >
-                    Bayar di Kasir
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => setPaymentMethod('QRIS')}
                     className={`py-2 px-3 rounded-lg border text-left transition ${
                       paymentMethod === 'QRIS'
@@ -452,7 +488,24 @@ function CustomerOrderContent() {
                         : 'border-neutral-200 bg-white text-neutral-700'
                     }`}
                   >
-                    QRIS
+                    <div className="flex items-center gap-1.5">
+                      <QrCode className="w-3.5 h-3.5" />
+                      <span>QRIS Instan</span>
+                    </div>
+                    <span className="text-[10px] opacity-75 block mt-0.5">Langsung Scan QR</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('Tunai')}
+                    className={`py-2 px-3 rounded-lg border text-left transition ${
+                      paymentMethod === 'Tunai'
+                        ? 'border-neutral-900 bg-neutral-900 text-white font-semibold'
+                        : 'border-neutral-200 bg-white text-neutral-700'
+                    }`}
+                  >
+                    <span>Bayar di Kasir</span>
+                    <span className="text-[10px] opacity-75 block mt-0.5">Selesai Makan</span>
                   </button>
                 </div>
               </div>
@@ -472,6 +525,86 @@ function CustomerOrderContent() {
                 {isSubmitting ? 'Mengirim Pesanan...' : 'Kirim Pesanan ke Dapur'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* POP-UP MODAL QRIS PEMBAYARAN */}
+      {isQrisModalOpen && activeOrder && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden border border-neutral-200 flex flex-col">
+            
+            {/* Header QRIS Resmi */}
+            <div className="p-4 bg-neutral-950 text-white flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-7 h-7 bg-red-600 rounded flex items-center justify-center font-bold text-[11px] text-white tracking-tighter">
+                  QRIS
+                </div>
+                <div>
+                  <h3 className="font-bold text-xs uppercase tracking-wider text-white">Pembayaran QRIS</h3>
+                  <p className="text-[10px] text-neutral-400">Standar Pembayaran Nasional</p>
+                </div>
+              </div>
+              <button onClick={() => setIsQrisModalOpen(false)} className="text-neutral-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body QRIS Card */}
+            <div className="p-5 flex flex-col items-center text-center space-y-3 bg-neutral-50/50">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">Merchant Restoran</span>
+                <h4 className="font-bold text-sm text-neutral-950">RASA NUSANTARA DINING</h4>
+                <p className="text-[10px] font-mono text-neutral-500">NMID: ID1020261118001</p>
+              </div>
+
+              {/* QR Image */}
+              <div className="bg-white p-3 rounded-xl border border-neutral-200 shadow-sm inline-block">
+                {qrisDataUrl ? (
+                  <img src={qrisDataUrl} alt="QRIS Code" className="w-48 h-48 mx-auto" />
+                ) : (
+                  <div className="w-48 h-48 flex items-center justify-center text-xs text-neutral-400">
+                    Memuat QRIS...
+                  </div>
+                )}
+              </div>
+
+              {/* Total Tagihan Box */}
+              <div className="w-full bg-white p-3 rounded-xl border border-neutral-200 space-y-1">
+                <span className="text-[10px] uppercase font-semibold text-neutral-500">Total Tagihan Yang Harus Dibayar</span>
+                <p className="text-lg font-black text-neutral-950">{formatRupiah(activeOrder.total_amount)}</p>
+                <p className="text-[10px] font-mono text-neutral-400">Order: {activeOrder.order_number}</p>
+              </div>
+
+              {/* Supported Apps Badges */}
+              <div className="w-full text-left bg-neutral-100/80 p-2.5 rounded-lg border border-neutral-200 text-[10px] text-neutral-600 space-y-1">
+                <p className="font-semibold text-neutral-800 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Dapat di-scan dengan aplikasi apapun:</span>
+                </p>
+                <p className="text-neutral-500 leading-relaxed">
+                  GoPay, OVO, DANA, ShopeePay, BCA Mobile, Livin by Mandiri, BRImo, BNI, LinkAja.
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="p-3 bg-white border-t border-neutral-200 flex gap-2">
+              <button
+                onClick={handleConfirmQrisPaid}
+                className="grow bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Saya Sudah Membayar</span>
+              </button>
+              <button
+                onClick={() => setIsQrisModalOpen(false)}
+                className="px-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold py-2.5 rounded-xl text-xs transition"
+              >
+                Tutup
+              </button>
+            </div>
+
           </div>
         </div>
       )}

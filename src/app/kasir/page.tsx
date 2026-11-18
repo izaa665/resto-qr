@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import QRCode from 'qrcode';
 import { 
   Printer, 
   RefreshCw, 
@@ -14,7 +15,9 @@ import {
   Banknote,
   Minus,
   Search,
-  X
+  X,
+  QrCode,
+  ShieldCheck
 } from 'lucide-react';
 import { Order, MenuItem, RestaurantTable, OrderItem, PaymentStatus, OrderStatus } from '@/types/database';
 import { 
@@ -50,6 +53,23 @@ export default function CashierPage() {
   const [orderToPay, setOrderToPay] = useState<Order | null>(null);
   const [cashGiven, setCashGiven] = useState<number>(0);
   const [settlementMethod, setSettlementMethod] = useState<'Tunai' | 'QRIS' | 'Kartu Debit'>('Tunai');
+  const [cashierQrisDataUrl, setCashierQrisDataUrl] = useState<string>('');
+
+  // Generate QRIS when Cashier opens QRIS Settlement
+  useEffect(() => {
+    if (!orderToPay || settlementMethod !== 'QRIS') return;
+    const qrisPayload = `00020101021226670014ID.GO.QRIS.WWW01189360052300000000000215ID1020261118001520458125303360540${orderToPay.total_amount}5802ID5913RASA NUSANTARA6007JAKARTA62070703A016304${orderToPay.order_number}`;
+    QRCode.toDataURL(qrisPayload, {
+      width: 260,
+      margin: 1,
+      color: {
+        dark: '#0a0a0a',
+        light: '#ffffff',
+      },
+    }).then(url => {
+      setCashierQrisDataUrl(url);
+    }).catch(err => console.error(err));
+  }, [orderToPay, settlementMethod]);
 
   // Digital Clock
   useEffect(() => {
@@ -575,6 +595,38 @@ export default function CashierPage() {
                       {formatRupiah(Math.max(0, cashGiven - orderToPay.total_amount))}
                     </span>
                   </div>
+                </div>
+              )}
+
+              {settlementMethod === 'QRIS' && (
+                <div className="text-center p-3 bg-white rounded-xl border border-neutral-200">
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-100">
+                    <span className="font-bold text-xs text-neutral-900 tracking-wider">QRIS STANDAR NASIONAL</span>
+                    <span className="text-[10px] font-mono text-neutral-500">NMID: ID1020261118001</span>
+                  </div>
+                  <div className="p-2 bg-neutral-50 rounded-lg border border-neutral-200 inline-block mb-2">
+                    {cashierQrisDataUrl ? (
+                      <img src={cashierQrisDataUrl} alt="QRIS Standar Pembayaran" className="w-44 h-44 mx-auto" />
+                    ) : (
+                      <div className="w-44 h-44 flex items-center justify-center text-xs text-neutral-400">
+                        Membuat QRIS...
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[11px] font-medium text-neutral-600 mb-1">
+                    Arahkan layar tablet/monitor ke pelanggan untuk scan
+                  </p>
+                  <p className="text-[10px] text-neutral-400">
+                    BCA Mobile, Livin by Mandiri, GoPay, OVO, ShopeePay, DANA, BRImo, LinkAja
+                  </p>
+                </div>
+              )}
+
+              {settlementMethod === 'Kartu Debit' && (
+                <div className="p-3 bg-neutral-100 rounded-xl text-neutral-700 text-xs space-y-1">
+                  <p className="font-semibold text-neutral-900">Pembayaran Mesin EDC / Debit</p>
+                  <p className="text-[11px] text-neutral-600">Gesek atau tap kartu pelanggan pada mesin EDC kasir sebesar:</p>
+                  <p className="text-base font-black text-neutral-950 font-mono">{formatRupiah(orderToPay.total_amount)}</p>
                 </div>
               )}
             </div>
