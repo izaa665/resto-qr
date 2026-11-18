@@ -333,19 +333,10 @@ function CustomerOrderContent() {
           })}
         </div>
 
-        {/* Footer Navigation */}
-        <div className="mt-8 text-center text-xs text-neutral-400 space-x-3 border-t border-neutral-200 pt-4">
-          <Link href="/kasir" className="hover:text-neutral-900 font-medium">
-            Kasir POS
-          </Link>
-          <span>•</span>
-          <Link href="/dapur" className="hover:text-neutral-900 font-medium">
-            Layar Dapur
-          </Link>
-          <span>•</span>
-          <Link href="/admin" className="hover:text-neutral-900 font-medium">
-            Admin
-          </Link>
+        {/* Restaurant Footer Info */}
+        <div className="mt-10 text-center text-[11px] text-neutral-400 border-t border-neutral-200 pt-6 pb-2">
+          <p className="font-semibold text-neutral-600">Rasa Nusantara Resto & Dining</p>
+          <p className="mt-0.5">Pesanan Anda akan disajikan langsung ke Meja {tableNumber}</p>
         </div>
 
       </main>

@@ -203,13 +203,6 @@ export default function CashierPage() {
             </button>
 
             <Link
-              href="/dapur"
-              className="bg-neutral-100 hover:bg-neutral-200 text-neutral-800 px-3 py-1.5 rounded-lg text-xs font-semibold transition"
-            >
-              Layar Dapur
-            </Link>
-
-            <Link
               href="/admin"
               className="bg-neutral-100 hover:bg-neutral-200 text-neutral-800 px-3 py-1.5 rounded-lg text-xs font-semibold transition"
             >
