@@ -9,15 +9,20 @@ import {
   RefreshCw, 
   Timer,
   CheckSquare,
-  Square
+  Square,
+  Bell,
+  Utensils,
+  Coffee
 } from 'lucide-react';
-import { Order } from '@/types/database';
-import { fetchOrders, updateOrderStatus, isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { Order, WaiterCall } from '@/types/database';
+import { fetchOrders, updateOrderStatus, fetchWaiterCalls, resolveWaiterCall, isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { playCashierChime } from '@/lib/utils';
 
 export default function KitchenDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [waiterCalls, setWaiterCalls] = useState<WaiterCall[]>([]);
   const [filter, setFilter] = useState<'active' | 'pending' | 'processing' | 'ready'>('active');
+  const [station, setStation] = useState<'all' | 'dapur' | 'bar'>('all');
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [previousPendingCount, setPreviousPendingCount] = useState<number>(0);
   const [selectedTicketOrder, setSelectedTicketOrder] = useState<Order | null>(null);
@@ -33,15 +38,26 @@ export default function KitchenDashboardPage() {
     return () => clearInterval(t);
   }, []);
 
+  const isDrinkItem = (name: string) => {
+    const n = name.toLowerCase();
+    return n.includes('es ') || n.includes('kopi') || n.includes('teh') || n.includes('jus') || n.includes('air') || n.includes('latte') || n.includes('lemon');
+  };
+
   const loadOrders = async () => {
-    const data = await fetchOrders();
+    const [data, calls] = await Promise.all([fetchOrders(), fetchWaiterCalls()]);
     setOrders(data);
+    setWaiterCalls(calls);
 
     const pendingCount = data.filter(o => o.order_status === 'pending').length;
     if (pendingCount > previousPendingCount && previousPendingCount >= 0 && isAudioEnabled) {
       playCashierChime();
     }
     setPreviousPendingCount(pendingCount);
+  };
+
+  const handleResolveCall = async (callId: number) => {
+    await resolveWaiterCall(callId);
+    setWaiterCalls(prev => prev.filter(c => c.id !== callId));
   };
 
   useEffect(() => {
@@ -53,6 +69,11 @@ export default function KitchenDashboardPage() {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'orders' },
+          () => loadOrders()
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'waiter_calls' },
           () => loadOrders()
         )
         .subscribe();
@@ -77,8 +98,16 @@ export default function KitchenDashboardPage() {
   };
 
   const filteredOrders = orders.filter(o => {
-    if (filter === 'active') return o.order_status === 'pending' || o.order_status === 'processing';
-    return o.order_status === filter;
+    const matchesStatus = filter === 'active' ? (o.order_status === 'pending' || o.order_status === 'processing') : o.order_status === filter;
+    if (!matchesStatus) return false;
+
+    if (station === 'dapur') {
+      return (o.items || []).some(i => !isDrinkItem(i.menu_name));
+    }
+    if (station === 'bar') {
+      return (o.items || []).some(i => isDrinkItem(i.menu_name));
+    }
+    return true;
   });
 
   const pendingCount = orders.filter(o => o.order_status === 'pending').length;
@@ -126,12 +155,32 @@ export default function KitchenDashboardPage() {
       {/* Main KDS Canvas */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
 
-        {/* Tab Filters */}
-        <div className="flex items-center justify-between pb-3 border-b border-neutral-200 mb-4">
-          <div className="flex items-center space-x-1.5">
+        {/* Live Waiter Calls Alert Bar for Kitchen */}
+        {waiterCalls.length > 0 && (
+          <div className="bg-amber-500 text-neutral-950 p-3 rounded-xl mb-4 text-xs font-bold flex items-center justify-between shadow-md">
+            <div className="flex items-center space-x-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-neutral-950 animate-ping"></span>
+              <Bell className="w-4 h-4 text-neutral-950" />
+              <span>
+                Panggilan Meja {waiterCalls[0].table_number}: "{waiterCalls[0].call_type}" ({waiterCalls[0].customer_name || 'Tamu'})
+                {waiterCalls.length > 1 && ` (+${waiterCalls.length - 1} panggilan lain)`}
+              </span>
+            </div>
+            <button
+              onClick={() => handleResolveCall(waiterCalls[0].id)}
+              className="bg-neutral-950 hover:bg-neutral-900 text-white px-3 py-1 rounded-lg text-xs font-bold transition shadow-xs"
+            >
+              ✓ Selesai / Tangani
+            </button>
+          </div>
+        )}
+
+        {/* Tab Filters & Station Selector */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-neutral-200 mb-4 gap-2.5">
+          <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setFilter('active')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition border ${
                 filter === 'active' 
                   ? 'bg-neutral-950 text-white border-neutral-950 font-bold' 
                   : 'bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50'
@@ -142,7 +191,7 @@ export default function KitchenDashboardPage() {
 
             <button
               onClick={() => setFilter('pending')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition border ${
                 filter === 'pending' 
                   ? 'bg-amber-500 text-neutral-950 border-amber-500 font-bold' 
                   : 'bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50'
@@ -153,7 +202,7 @@ export default function KitchenDashboardPage() {
 
             <button
               onClick={() => setFilter('processing')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition border ${
                 filter === 'processing' 
                   ? 'bg-blue-600 text-white border-blue-600 font-bold' 
                   : 'bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50'
@@ -164,7 +213,7 @@ export default function KitchenDashboardPage() {
 
             <button
               onClick={() => setFilter('ready')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition border ${
                 filter === 'ready' 
                   ? 'bg-emerald-600 text-white border-emerald-600 font-bold' 
                   : 'bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50'
@@ -174,13 +223,45 @@ export default function KitchenDashboardPage() {
             </button>
           </div>
 
-          <button
-            onClick={loadOrders}
-            className="text-neutral-500 hover:text-neutral-950 p-1.5 transition"
-            title="Refresh Antrean"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          <div className="flex items-center space-x-2 shrink-0">
+            {/* Station Split */}
+            <div className="flex items-center bg-white p-0.5 rounded-lg border border-neutral-200 text-xs">
+              <button
+                onClick={() => setStation('all')}
+                className={`px-2.5 py-1 rounded-md font-semibold transition ${
+                  station === 'all' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:text-neutral-950'
+                }`}
+              >
+                Semua
+              </button>
+              <button
+                onClick={() => setStation('dapur')}
+                className={`px-2.5 py-1 rounded-md font-semibold transition flex items-center gap-1 ${
+                  station === 'dapur' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:text-neutral-950'
+                }`}
+              >
+                <Utensils className="w-3 h-3" />
+                <span>Makanan</span>
+              </button>
+              <button
+                onClick={() => setStation('bar')}
+                className={`px-2.5 py-1 rounded-md font-semibold transition flex items-center gap-1 ${
+                  station === 'bar' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:text-neutral-950'
+                }`}
+              >
+                <Coffee className="w-3 h-3" />
+                <span>Bar / Minuman</span>
+              </button>
+            </div>
+
+            <button
+              onClick={loadOrders}
+              className="text-neutral-500 hover:text-neutral-950 p-1.5 transition"
+              title="Refresh Antrean"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Tickets Grid (Clean Light Mode) */}

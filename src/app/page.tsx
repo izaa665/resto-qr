@@ -18,10 +18,13 @@ import {
   Copy,
   RefreshCw,
   AlertTriangle,
-  Timer
+  Timer,
+  Bell,
+  Wifi,
+  ChevronRight
 } from 'lucide-react';
 import QRCode from 'qrcode';
-import { Category, MenuItem, OrderItem, RestaurantTable, Order } from '@/types/database';
+import { Category, MenuItem, OrderItem, RestaurantTable, Order, RestaurantSetting } from '@/types/database';
 import { 
   fetchCategories, 
   fetchMenus, 
@@ -29,6 +32,8 @@ import {
   createOrder, 
   fetchOrders, 
   updateOrderStatus,
+  fetchSetting,
+  createWaiterCall,
   supabase,
   isSupabaseConfigured
 } from '@/lib/supabase';
@@ -49,6 +54,12 @@ function CustomerOrderContent() {
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+  const [setting, setSetting] = useState<RestaurantSetting | null>(null);
+
+  // Call Waiter Modal
+  const [isCallWaiterOpen, setIsCallWaiterOpen] = useState(false);
+  const [isSendingCall, setIsSendingCall] = useState(false);
+  const [callSuccessNotice, setCallSuccessNotice] = useState('');
   
   // Form Info
   const [customerName, setCustomerName] = useState('Ani');
@@ -100,16 +111,29 @@ function CustomerOrderContent() {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
+  const handleSendWaiterCall = async (callType: string) => {
+    setIsSendingCall(true);
+    await createWaiterCall(tableNumber, callType, customerName);
+    setIsSendingCall(false);
+    setCallSuccessNotice(`Pelayan telah diberitahu untuk Meja ${tableNumber}!`);
+    setTimeout(() => {
+      setCallSuccessNotice('');
+      setIsCallWaiterOpen(false);
+    }, 2000);
+  };
+
   useEffect(() => {
     async function loadData() {
-      const [cats, mns, tbls] = await Promise.all([
+      const [cats, mns, tbls, st] = await Promise.all([
         fetchCategories(),
         fetchMenus(),
-        fetchTables()
+        fetchTables(),
+        fetchSetting()
       ]);
       setCategories(cats);
       setMenus(mns);
       setTables(tbls);
+      setSetting(st);
     }
     loadData();
   }, []);
@@ -197,7 +221,12 @@ function CustomerOrderContent() {
   }, [activeOrder, qrisVersion]);
 
   const totalCartQty = cart.reduce((sum, item) => sum + item.qty, 0);
-  const totalCartPrice = cart.reduce((sum, item) => sum + item.subtotal, 0);
+  const subtotalCartPrice = cart.reduce((sum, item) => sum + item.subtotal, 0);
+  const taxPercent = setting?.tax_percent ?? 10;
+  const servicePercent = setting?.service_percent ?? 0;
+  const taxAmount = Math.round((subtotalCartPrice * taxPercent) / 100);
+  const serviceAmount = Math.round((subtotalCartPrice * servicePercent) / 100);
+  const totalCartPrice = subtotalCartPrice + taxAmount + serviceAmount;
 
   const addToCart = (menu: MenuItem) => {
     setCart(prev => {
@@ -258,6 +287,7 @@ function CustomerOrderContent() {
         table_number: tableNumber,
         customer_name: customerName.trim(),
         total_amount: totalCartPrice,
+        tax_amount: taxAmount,
         payment_method: paymentMethod,
         payment_status: 'unpaid',
         order_status: 'pending',
@@ -316,20 +346,31 @@ function CustomerOrderContent() {
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div>
             <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-400 block">
-              Dine-In Order
+              Dine-In Menu
             </span>
-            <h1 className="text-base font-bold tracking-tight text-neutral-950">
-              Rasa Nusantara
+            <h1 className="text-base font-bold tracking-tight text-neutral-950 truncate max-w-[150px]">
+              {setting?.name || 'Rasa Nusantara'}
             </h1>
           </div>
 
-          <button
-            onClick={() => setIsTableModalOpen(true)}
-            className="flex items-center space-x-1.5 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 text-neutral-900 px-3 py-1.5 rounded-lg text-xs font-semibold transition"
-          >
-            <MapPin className="w-3.5 h-3.5 text-neutral-500" />
-            <span>Meja {tableNumber}</span>
-          </button>
+          <div className="flex items-center space-x-1.5">
+            <button
+              onClick={() => setIsCallWaiterOpen(true)}
+              className="flex items-center space-x-1 bg-amber-500 hover:bg-amber-400 text-neutral-950 px-2.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs"
+              title="Panggil pelayan ke meja Anda"
+            >
+              <Bell className="w-3.5 h-3.5" />
+              <span>Panggil</span>
+            </button>
+
+            <button
+              onClick={() => setIsTableModalOpen(true)}
+              className="flex items-center space-x-1.5 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 text-neutral-900 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
+            >
+              <MapPin className="w-3.5 h-3.5 text-neutral-500" />
+              <span>Meja {tableNumber}</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -506,9 +547,16 @@ function CustomerOrderContent() {
         </div>
 
         {/* Restaurant Footer Info */}
-        <div className="mt-10 text-center text-[11px] text-neutral-400 border-t border-neutral-200 pt-6 pb-2">
-          <p className="font-semibold text-neutral-600">Rasa Nusantara Resto & Dining</p>
-          <p className="mt-0.5">Pesanan Anda akan disajikan langsung ke Meja {tableNumber}</p>
+        <div className="mt-10 text-center text-[11px] text-neutral-400 border-t border-neutral-200 pt-6 pb-2 space-y-1">
+          <p className="font-semibold text-neutral-700">{setting?.name || 'Rasa Nusantara Resto & Cafe'}</p>
+          <p className="text-neutral-500">{setting?.address || 'Jl. Kuliner Lezat No. 88, Jakarta'}</p>
+          {setting?.wifi_password && (
+            <div className="inline-flex items-center gap-1.5 bg-neutral-100 border border-neutral-200 px-2.5 py-1 rounded-full text-[10px] text-neutral-600 font-mono mt-1">
+              <Wifi className="w-3 h-3 text-neutral-500" />
+              <span>WiFi: <strong>{setting.wifi_password}</strong></span>
+            </div>
+          )}
+          <p className="text-[10px] text-neutral-400 mt-1">Pesanan Anda akan disajikan langsung ke Meja {tableNumber}</p>
         </div>
 
       </main>
@@ -640,9 +688,27 @@ function CustomerOrderContent() {
                 )}
               </div>
 
-              <div className="pt-2 border-t border-neutral-200 flex justify-between items-baseline text-xs">
-                <span className="font-semibold text-neutral-600">Total Pembayaran</span>
-                <span className="text-sm font-bold text-neutral-950">{formatRupiah(totalCartPrice)}</span>
+              <div className="pt-2.5 border-t border-neutral-200 space-y-1.5 text-xs">
+                <div className="flex justify-between items-baseline text-neutral-600">
+                  <span>Subtotal Menu</span>
+                  <span className="font-semibold text-neutral-900">{formatRupiah(subtotalCartPrice)}</span>
+                </div>
+                {taxPercent > 0 && (
+                  <div className="flex justify-between items-baseline text-neutral-600">
+                    <span>Pajak Restoran (PB1 {taxPercent}%)</span>
+                    <span className="font-semibold text-neutral-900">{formatRupiah(taxAmount)}</span>
+                  </div>
+                )}
+                {servicePercent > 0 && (
+                  <div className="flex justify-between items-baseline text-neutral-600">
+                    <span>Biaya Layanan ({servicePercent}%)</span>
+                    <span className="font-semibold text-neutral-900">{formatRupiah(serviceAmount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-baseline pt-1.5 border-t border-neutral-100">
+                  <span className="font-bold text-neutral-950">Total Pembayaran</span>
+                  <span className="text-sm font-bold text-neutral-950">{formatRupiah(totalCartPrice)}</span>
+                </div>
               </div>
             </div>
 
@@ -837,6 +903,56 @@ function CustomerOrderContent() {
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Call Waiter Modal */}
+      {isCallWaiterOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-white rounded-2xl p-4 shadow-xl border border-neutral-200 space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
+              <div className="flex items-center space-x-2">
+                <Bell className="w-4 h-4 text-amber-500" />
+                <h3 className="font-bold text-xs uppercase tracking-tight text-neutral-950">
+                  Panggil Pelayan • Meja {tableNumber}
+                </h3>
+              </div>
+              <button onClick={() => setIsCallWaiterOpen(false)} className="text-neutral-400 hover:text-neutral-900">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-neutral-500 leading-relaxed">
+              Pilih jenis bantuan yang Anda butuhkan, staf pelayan kami akan segera datang ke Meja {tableNumber}:
+            </p>
+
+            <div className="space-y-1.5 text-xs">
+              {[
+                { id: 'Bantuan Pelayan ke Meja', label: '🛎️ Butuh Bantuan Pelayan ke Meja' },
+                { id: 'Minta Bill / Pembayaran', label: '🧾 Minta Bill / Pelunasan ke Kasir' },
+                { id: 'Alat Makan & Tisu', label: '🍴 Tambahan Sendok, Garpu & Tisu' },
+                { id: 'Refill Air / Minum', label: '🥛 Minta Air Minum / Refill' }
+              ].map(opt => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  disabled={isSendingCall}
+                  onClick={() => handleSendWaiterCall(opt.id)}
+                  className="w-full p-2.5 rounded-xl border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 hover:border-neutral-300 text-left font-semibold text-neutral-800 transition flex items-center justify-between disabled:opacity-50"
+                >
+                  <span>{opt.label}</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
+                </button>
+              ))}
+            </div>
+
+            {callSuccessNotice && (
+              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-center text-xs text-emerald-800 font-semibold flex items-center justify-center gap-1.5 animate-fadeIn">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>{callSuccessNotice}</span>
+              </div>
+            )}
           </div>
         </div>
       )}

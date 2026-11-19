@@ -31,6 +31,7 @@ export interface MenuItem {
   image: string;
   is_available: boolean;
   category_name?: string;
+  is_drink?: boolean;
 }
 
 export interface RestaurantTable {
@@ -60,6 +61,8 @@ export interface Order {
   table_number?: number | null;
   customer_name: string;
   total_amount: number;
+  discount_amount?: number;
+  tax_amount?: number;
   payment_method: 'Tunai' | 'QRIS' | 'Transfer Bank' | string;
   payment_status: PaymentStatus;
   order_status: OrderStatus;
@@ -85,4 +88,15 @@ export interface RestaurantSetting {
   phone: string;
   wifi_password: string;
   tax_percent: number;
+  service_percent?: number;
+  receipt_footer?: string;
+}
+
+export interface WaiterCall {
+  id: number;
+  table_number: number;
+  customer_name?: string;
+  call_type: string;
+  status: 'pending' | 'resolved';
+  created_at: string;
 }

@@ -8,6 +8,7 @@ import {
   Expense, 
   User, 
   RestaurantSetting,
+  WaiterCall,
   OrderStatus,
   PaymentStatus,
   OrderType
@@ -179,11 +180,13 @@ export const initialUsers: User[] = [
 
 export const initialSetting: RestaurantSetting = {
   id: 1,
-  name: 'Rasa Nusantara Resto & POS',
+  name: 'Rasa Nusantara Resto & Cafe',
   address: 'Jl. Kuliner Lezat No. 88, Jakarta',
   phone: '0812-3456-7890',
   wifi_password: 'nusantara88',
-  tax_percent: 0
+  tax_percent: 10,
+  service_percent: 0,
+  receipt_footer: 'Terima kasih atas kunjungan Anda!'
 };
 
 // Storage Keys
@@ -193,7 +196,8 @@ const STORAGE_KEYS = {
   EXPENSES: 'klir_resto_expenses',
   TABLES: 'klir_resto_tables',
   SETTING: 'klir_resto_setting',
-  USERS: 'klir_resto_users'
+  USERS: 'klir_resto_users',
+  WAITER_CALLS: 'klir_resto_waiter_calls'
 };
 
 function getLocalData<T>(key: string, defaultData: T): T {
@@ -274,6 +278,8 @@ export async function createOrder(orderData: {
   customer_name: string;
   cashier_name?: string;
   total_amount: number;
+  discount_amount?: number;
+  tax_amount?: number;
   payment_method: string;
   payment_status?: PaymentStatus;
   order_status?: OrderStatus;
@@ -295,6 +301,8 @@ export async function createOrder(orderData: {
         customer_name: orderData.customer_name,
         cashier_name: orderData.cashier_name || '',
         total_amount: orderData.total_amount,
+        discount_amount: orderData.discount_amount || 0,
+        tax_amount: orderData.tax_amount || 0,
         payment_method: orderData.payment_method,
         payment_status: payStatus,
         order_status: ordStatus,
@@ -338,6 +346,8 @@ export async function createOrder(orderData: {
     customer_name: orderData.customer_name,
     cashier_name: orderData.cashier_name || '',
     total_amount: orderData.total_amount,
+    discount_amount: orderData.discount_amount || 0,
+    tax_amount: orderData.tax_amount || 0,
     payment_method: orderData.payment_method,
     payment_status: payStatus,
     order_status: ordStatus,
@@ -511,5 +521,69 @@ export async function updateSetting(updates: Partial<RestaurantSetting>): Promis
   const current = getLocalData<RestaurantSetting>(STORAGE_KEYS.SETTING, initialSetting);
   const updated = { ...current, ...updates };
   setLocalData(STORAGE_KEYS.SETTING, updated);
+  return true;
+}
+
+export async function updateOrderTable(orderId: number, newTableNumber: number): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from('orders').update({ table_number: newTableNumber }).eq('id', orderId);
+    return !error;
+  }
+  const currentOrders = getLocalData<Order[]>(STORAGE_KEYS.ORDERS, initialOrders);
+  const updated = currentOrders.map(o => (o.id === orderId ? { ...o, table_number: newTableNumber } : o));
+  setLocalData(STORAGE_KEYS.ORDERS, updated);
+  return true;
+}
+
+export async function updateOrderDiscount(orderId: number, discountAmount: number, newTotal: number): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from('orders').update({ discount_amount: discountAmount, total_amount: newTotal }).eq('id', orderId);
+    return !error;
+  }
+  const currentOrders = getLocalData<Order[]>(STORAGE_KEYS.ORDERS, initialOrders);
+  const updated = currentOrders.map(o => (o.id === orderId ? { ...o, discount_amount: discountAmount, total_amount: newTotal } : o));
+  setLocalData(STORAGE_KEYS.ORDERS, updated);
+  return true;
+}
+
+export async function fetchWaiterCalls(): Promise<WaiterCall[]> {
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase.from('waiter_calls').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+    if (!error && data) return data;
+  }
+  return getLocalData<WaiterCall[]>(STORAGE_KEYS.WAITER_CALLS, []);
+}
+
+export async function createWaiterCall(tableNumber: number, callType: string, customerName?: string): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from('waiter_calls').insert({
+      table_number: tableNumber,
+      call_type: callType,
+      customer_name: customerName || '',
+      status: 'pending'
+    });
+    return !error;
+  }
+  const current = getLocalData<WaiterCall[]>(STORAGE_KEYS.WAITER_CALLS, []);
+  const newCall: WaiterCall = {
+    id: Date.now(),
+    table_number: tableNumber,
+    customer_name: customerName || '',
+    call_type: callType,
+    status: 'pending',
+    created_at: new Date().toISOString()
+  };
+  setLocalData(STORAGE_KEYS.WAITER_CALLS, [newCall, ...current]);
+  return true;
+}
+
+export async function resolveWaiterCall(id: number): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from('waiter_calls').update({ status: 'resolved' }).eq('id', id);
+    return !error;
+  }
+  const current = getLocalData<WaiterCall[]>(STORAGE_KEYS.WAITER_CALLS, []);
+  const updated = current.filter(c => c.id !== id);
+  setLocalData(STORAGE_KEYS.WAITER_CALLS, updated);
   return true;
 }

@@ -25,9 +25,25 @@ import {
   Shield,
   User as UserIcon,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Bell,
+  LayoutGrid,
+  FileText,
+  ArrowRightLeft,
+  Percent,
+  Wifi
 } from 'lucide-react';
-import { Order, MenuItem, RestaurantTable, OrderItem, PaymentStatus, OrderStatus, User } from '@/types/database';
+import { 
+  Order, 
+  MenuItem, 
+  RestaurantTable, 
+  OrderItem, 
+  PaymentStatus, 
+  OrderStatus, 
+  User, 
+  WaiterCall, 
+  RestaurantSetting 
+} from '@/types/database';
 import { 
   fetchOrders, 
   updateOrderStatus, 
@@ -35,6 +51,11 @@ import {
   fetchTables, 
   createOrder, 
   fetchUsers,
+  fetchWaiterCalls,
+  resolveWaiterCall,
+  updateOrderTable,
+  updateOrderDiscount,
+  fetchSetting,
   isSupabaseConfigured, 
   supabase 
 } from '@/lib/supabase';
@@ -45,6 +66,9 @@ export default function CashierPage() {
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [tables, setTables] = useState<RestaurantTable[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [waiterCalls, setWaiterCalls] = useState<WaiterCall[]>([]);
+  const [setting, setSetting] = useState<RestaurantSetting | null>(null);
+
   const [activeCashier, setActiveCashier] = useState<User | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [cashierPin, setCashierPin] = useState<string>('');
@@ -52,9 +76,14 @@ export default function CashierPage() {
   const [isAuthLoaded, setIsAuthLoaded] = useState<boolean>(false);
 
   const [filter, setFilter] = useState<'active' | 'unpaid' | 'paid' | 'all' | 'waiting_qris'>('active');
+  const [viewMode, setViewMode] = useState<'cards' | 'tables'>('cards');
   const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState<Order | null>(null);
+  const [orderToTransfer, setOrderToTransfer] = useState<Order | null>(null);
+  const [isShiftReportOpen, setIsShiftReportOpen] = useState<boolean>(false);
+  const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [currentTime, setCurrentTime] = useState('');
   const [previousPendingCount, setPreviousPendingCount] = useState<number>(0);
+  const [previousCallCount, setPreviousCallCount] = useState<number>(0);
 
   // Check saved cashier shift
   useEffect(() => {
@@ -161,16 +190,20 @@ export default function CashierPage() {
   }, []);
 
   const loadAll = async () => {
-    const [ord, mn, tbl, usr] = await Promise.all([
+    const [ord, mn, tbl, usr, calls, st] = await Promise.all([
       fetchOrders(),
       fetchMenus(),
       fetchTables(),
-      fetchUsers()
+      fetchUsers(),
+      fetchWaiterCalls(),
+      fetchSetting()
     ]);
     setOrders(ord);
     setMenus(mn);
     setTables(tbl);
     setUsers(usr);
+    setWaiterCalls(calls);
+    setSetting(st);
 
     if (!selectedUserId && usr.length > 0) {
       const defaultUser = usr.find(u => u.role === 'kasir') || usr[0];
@@ -178,10 +211,23 @@ export default function CashierPage() {
     }
 
     const pendingCount = ord.filter(o => o.order_status === 'pending').length;
-    if (pendingCount > previousPendingCount && previousPendingCount >= 0) {
+    if ((pendingCount > previousPendingCount && previousPendingCount >= 0) || (calls.length > previousCallCount && previousCallCount >= 0)) {
       playCashierChime();
     }
     setPreviousPendingCount(pendingCount);
+    setPreviousCallCount(calls.length);
+  };
+
+  const handleResolveCall = async (callId: number) => {
+    await resolveWaiterCall(callId);
+    setWaiterCalls(prev => prev.filter(c => c.id !== callId));
+  };
+
+  const handleTransferTable = async (newTableNumber: number) => {
+    if (!orderToTransfer) return;
+    await updateOrderTable(orderToTransfer.id, newTableNumber);
+    setOrderToTransfer(null);
+    loadAll();
   };
 
   useEffect(() => {
@@ -195,16 +241,21 @@ export default function CashierPage() {
           { event: '*', schema: 'public', table: 'orders' },
           () => loadAll()
         )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'waiter_calls' },
+          () => loadAll()
+        )
         .subscribe();
 
       return () => {
         supabase.removeChannel(channel);
       };
     } else {
-      const interval = setInterval(loadAll, 3500);
+      const interval = setInterval(loadAll, 3000);
       return () => clearInterval(interval);
     }
-  }, [previousPendingCount]);
+  }, [previousPendingCount, previousCallCount]);
 
   const handleUpdateStatus = async (
     orderId: number,
@@ -440,6 +491,15 @@ export default function CashierPage() {
 
           <div className="flex items-center space-x-2">
             <button
+              onClick={() => setIsShiftReportOpen(true)}
+              className="bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border border-neutral-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+              title="Laporan Rekap Penjualan Shift Kasir"
+            >
+              <FileText className="w-3.5 h-3.5 text-neutral-600" />
+              <span className="hidden sm:inline">Laporan Shift</span>
+            </button>
+
+            <button
               onClick={() => setIsPosModalOpen(true)}
               className="bg-neutral-950 hover:bg-neutral-900 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
             >
@@ -464,6 +524,26 @@ export default function CashierPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+
+        {/* Live Waiter Calls Alert Bar */}
+        {waiterCalls.length > 0 && (
+          <div className="bg-amber-500 text-neutral-950 p-3 rounded-xl mb-4 text-xs font-bold flex items-center justify-between shadow-md">
+            <div className="flex items-center space-x-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-neutral-950 animate-ping"></span>
+              <Bell className="w-4 h-4 text-neutral-950" />
+              <span>
+                Panggilan Meja {waiterCalls[0].table_number}: "{waiterCalls[0].call_type}" ({waiterCalls[0].customer_name || 'Tamu'})
+                {waiterCalls.length > 1 && ` (+${waiterCalls.length - 1} panggilan lain)`}
+              </span>
+            </div>
+            <button
+              onClick={() => handleResolveCall(waiterCalls[0].id)}
+              className="bg-neutral-950 hover:bg-neutral-900 text-white px-3 py-1 rounded-lg text-xs font-bold transition shadow-xs"
+            >
+              ✓ Selesai / Tangani
+            </button>
+          </div>
+        )}
 
         {/* Metrics Row */}
         <div className="grid grid-cols-3 gap-3 mb-4">
@@ -531,17 +611,151 @@ export default function CashierPage() {
             </button>
           </div>
 
-          <button
-            onClick={loadAll}
-            className="text-neutral-500 hover:text-neutral-900 p-1.5 transition ml-2 shrink-0"
-            title="Refresh"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          <div className="flex items-center space-x-2 shrink-0 ml-2">
+            <div className="flex items-center bg-neutral-100 p-0.5 rounded-lg border border-neutral-200 text-xs">
+              <button
+                onClick={() => setViewMode('cards')}
+                className={`px-2.5 py-1 rounded-md font-semibold transition ${
+                  viewMode === 'cards' ? 'bg-white text-neutral-950 shadow-xs' : 'text-neutral-500 hover:text-neutral-900'
+                }`}
+              >
+                Daftar Kartu
+              </button>
+              <button
+                onClick={() => setViewMode('tables')}
+                className={`px-2.5 py-1 rounded-md font-semibold transition ${
+                  viewMode === 'tables' ? 'bg-white text-neutral-950 shadow-xs' : 'text-neutral-500 hover:text-neutral-900'
+                }`}
+              >
+                Denah Meja
+              </button>
+            </div>
+
+            <button
+              onClick={loadAll}
+              className="text-neutral-500 hover:text-neutral-900 p-1.5 transition"
+              title="Refresh"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Orders Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        {/* VIEW MODE: DENAH MEJA (FLOOR PLAN) */}
+        {viewMode === 'tables' ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
+            {tables.map(table => {
+              const activeOrder = orders.find(
+                o => o.table_number === table.table_number && o.order_status !== 'completed' && o.order_status !== 'cancelled'
+              );
+              const isOccupied = Boolean(activeOrder);
+              const isPaid = activeOrder?.payment_status === 'paid';
+              const isWaitingQris = activeOrder?.payment_status === 'waiting_confirmation';
+
+              return (
+                <div
+                  key={table.table_number}
+                  className={`rounded-2xl border p-4 flex flex-col justify-between transition min-h-[175px] ${
+                    !isOccupied
+                      ? 'bg-white border-neutral-200 hover:border-neutral-300'
+                      : isPaid
+                      ? 'bg-blue-50/50 border-blue-200'
+                      : isWaitingQris
+                      ? 'bg-amber-50/80 border-amber-300 ring-1 ring-amber-300'
+                      : 'bg-amber-50/40 border-amber-200'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
+                      <span className="font-bold text-sm text-neutral-950">MEJA {table.table_number}</span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        !isOccupied
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : isPaid
+                          ? 'bg-blue-100 text-blue-800'
+                          : isWaitingQris
+                          ? 'bg-amber-200 text-amber-900 animate-pulse'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {!isOccupied ? 'KOSONG' : isPaid ? 'LUNAS' : isWaitingQris ? 'VERIFIKASI QRIS' : 'TERISI'}
+                      </span>
+                    </div>
+
+                    {isOccupied && activeOrder ? (
+                      <div className="py-2.5 space-y-1 text-xs">
+                        <p className="font-semibold text-neutral-900 truncate">{activeOrder.customer_name}</p>
+                        <p className="text-[11px] text-neutral-500 font-mono">#{activeOrder.order_number.slice(-3)}</p>
+                        <p className="text-xs font-bold text-neutral-950 mt-1">{formatRupiah(activeOrder.total_amount)}</p>
+                      </div>
+                    ) : (
+                      <div className="py-6 text-center text-xs text-neutral-400">
+                        Siap ditempati
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-2 border-t border-neutral-100">
+                    {isOccupied && activeOrder ? (
+                      <div className="flex gap-1.5">
+                        {activeOrder.payment_status === 'waiting_confirmation' ? (
+                          <button
+                            onClick={async () => {
+                              await handleUpdateStatus(activeOrder.id, {
+                                payment_status: 'paid',
+                                payment_method: 'QRIS',
+                                cashier_name: activeCashier ? activeCashier.name : 'Kasir'
+                              });
+                            }}
+                            className="grow bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-lg text-xs"
+                          >
+                            Terima QRIS
+                          </button>
+                        ) : activeOrder.payment_status === 'unpaid' ? (
+                          <button
+                            onClick={() => {
+                              setOrderToPay(activeOrder);
+                              setCashGiven(activeOrder.total_amount);
+                            }}
+                            className="grow bg-neutral-950 hover:bg-neutral-900 text-white font-semibold py-1.5 rounded-lg text-xs"
+                          >
+                            Bayar
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleUpdateStatus(activeOrder.id, { order_status: 'completed' })}
+                            className="grow bg-neutral-900 hover:bg-neutral-800 text-white font-semibold py-1.5 rounded-lg text-xs"
+                          >
+                            Tutup Meja
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setSelectedOrderForReceipt(activeOrder)}
+                          className="px-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-xs flex items-center justify-center transition"
+                          title="Cetak Struk"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setPosTableNumber(table.table_number);
+                          setPosOrderType('dine_in');
+                          setIsPosModalOpen(true);
+                        }}
+                        className="w-full bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-semibold py-1.5 rounded-lg text-xs transition"
+                      >
+                        + Buka Meja
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* VIEW MODE: DAFTAR KARTU PESANAN */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {filteredOrders.map(order => {
             const isCompleted = order.order_status === 'completed';
             const isPaid = order.payment_status === 'paid';
@@ -564,6 +778,16 @@ export default function CashierPage() {
                         <span className="font-bold text-xs uppercase text-neutral-950">
                           {order.order_type === 'takeaway' ? 'Takeaway' : `Meja ${order.table_number}`}
                         </span>
+                        {order.order_type !== 'takeaway' && order.order_status !== 'completed' && (
+                          <button
+                            onClick={() => setOrderToTransfer(order)}
+                            className="text-[10px] bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 text-neutral-700 px-1.5 py-0.5 rounded flex items-center gap-0.5 transition"
+                            title="Pindahkan pesanan ke nomor meja lain"
+                          >
+                            <ArrowRightLeft className="w-2.5 h-2.5" />
+                            <span>Pindah</span>
+                          </button>
+                        )}
                         <span className="text-xs font-mono text-neutral-400">#{order.order_number.slice(-3)}</span>
 
                         {/* Kitchen / Order Status Indicator */}
@@ -690,6 +914,7 @@ export default function CashierPage() {
             );
           })}
         </div>
+        )}
 
       </main>
 
@@ -841,158 +1066,222 @@ export default function CashierPage() {
               {orderToPay.order_type === 'takeaway' ? 'Takeaway' : `Meja ${orderToPay.table_number}`} • {orderToPay.customer_name}
             </p>
 
-            <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-200 mb-3 space-y-2.5 text-xs">
-              <div className="flex justify-between font-bold text-sm">
-                <span>Total Tagihan:</span>
-                <span className="text-neutral-950">{formatRupiah(orderToPay.total_amount)}</span>
-              </div>
+            {/* Calculation with discount */}
+            {(() => {
+              const discAmt = Math.round((orderToPay.total_amount * discountPercent) / 100);
+              const finalAmount = Math.max(0, orderToPay.total_amount - discAmt);
 
-              <div>
-                <label className="block text-[11px] font-semibold text-neutral-600 mb-1">Metode Pelunasan</label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(['Tunai', 'QRIS', 'Kartu Debit'] as const).map(m => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setSettlementMethod(m)}
-                      className={`py-1.5 rounded-lg border text-xs font-semibold transition ${
-                        settlementMethod === m ? 'bg-neutral-950 text-white border-neutral-950' : 'bg-white text-neutral-700 border-neutral-200'
-                      }`}
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {settlementMethod === 'Tunai' && (
-                <div>
-                  <label className="block text-[11px] font-semibold text-neutral-600 mb-1">Uang Diterima</label>
-                  <input
-                    type="number"
-                    value={cashGiven || ''}
-                    onChange={e => setCashGiven(parseInt(e.target.value) || 0)}
-                    className="w-full bg-white border border-neutral-200 rounded-lg px-2.5 py-1.5 text-xs font-bold"
-                  />
-                  {/* Quick cash pills */}
-                  <div className="flex gap-1.5 mt-1.5">
-                    {[orderToPay.total_amount, 50000, 100000].map(amt => (
-                      <button
-                        key={amt}
-                        type="button"
-                        onClick={() => setCashGiven(amt)}
-                        className="px-2 py-0.5 rounded bg-neutral-200 hover:bg-neutral-300 text-[10px] font-semibold text-neutral-700"
-                      >
-                        {formatRupiah(amt)}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="flex justify-between font-bold text-xs pt-2 mt-2 border-t border-neutral-200">
-                    <span>Kembalian:</span>
-                    <span className={cashGiven >= orderToPay.total_amount ? 'text-emerald-700' : 'text-neutral-500'}>
-                      {formatRupiah(Math.max(0, cashGiven - orderToPay.total_amount))}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {settlementMethod === 'QRIS' && (
-                <div className="text-center p-3 bg-white rounded-xl border border-neutral-200 space-y-2">
-                  <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
-                    <span className="font-bold text-xs text-neutral-900 tracking-wider">QRIS STANDAR NASIONAL</span>
-                    <span className="text-[10px] font-mono text-neutral-500">NMID: ID1020261118001</span>
-                  </div>
-
-                  {/* Countdown Timer Kasir */}
-                  <div className={`p-2 rounded-lg flex items-center justify-between text-xs ${
-                    isCashierQrisExpired 
-                      ? 'bg-rose-50 text-rose-700 border border-rose-200' 
-                      : 'bg-amber-50 text-amber-900 border border-amber-200'
-                  }`}>
-                    <div className="flex items-center gap-1.5 font-semibold text-[11px]">
-                      <Clock className="w-3.5 h-3.5 text-amber-500" />
-                      <span>{isCashierQrisExpired ? 'QRIS Kedaluwarsa' : 'Batas Waktu Scan:'}</span>
+              return (
+                <>
+                  <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-200 mb-3 space-y-2 text-xs">
+                    <div className="flex justify-between font-bold text-xs text-neutral-600">
+                      <span>Tagihan Asli:</span>
+                      <span>{formatRupiah(orderToPay.total_amount)}</span>
                     </div>
-                    <span className="font-mono font-bold text-xs">
-                      {isCashierQrisExpired 
-                        ? '00:00' 
-                        : `${String(Math.floor(cashierQrisTimeLeft / 60)).padStart(2, '0')}:${String(cashierQrisTimeLeft % 60).padStart(2, '0')}`}
-                    </span>
-                  </div>
 
-                  {/* QR Image with Expired Overlay */}
-                  <div className="relative p-2 bg-neutral-50 rounded-lg border border-neutral-200 inline-block overflow-hidden">
-                    {cashierQrisDataUrl ? (
-                      <img 
-                        src={cashierQrisDataUrl} 
-                        alt="QRIS Standar Pembayaran" 
-                        className={`w-44 h-44 mx-auto ${isCashierQrisExpired ? 'filter blur-[3px] opacity-40' : ''}`} 
-                      />
-                    ) : (
-                      <div className="w-44 h-44 flex items-center justify-center text-xs text-neutral-400">
-                        Membuat QRIS...
+                    {/* Diskon Selector */}
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-[11px] font-semibold text-neutral-600 flex items-center gap-1">
+                          <Percent className="w-3 h-3 text-neutral-500" />
+                          <span>Diskon / Promo</span>
+                        </label>
+                        {discAmt > 0 && (
+                          <span className="text-[11px] font-semibold text-emerald-700">
+                            - {formatRupiah(discAmt)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-5 gap-1">
+                        {[0, 5, 10, 15, 20].map(pct => (
+                          <button
+                            key={pct}
+                            type="button"
+                            onClick={() => {
+                              setDiscountPercent(pct);
+                              if (settlementMethod === 'Tunai') {
+                                const newFinal = Math.max(0, orderToPay.total_amount - Math.round((orderToPay.total_amount * pct) / 100));
+                                setCashGiven(newFinal);
+                              }
+                            }}
+                            className={`py-1 rounded-lg border text-[11px] font-semibold transition ${
+                              discountPercent === pct
+                                ? 'bg-neutral-950 text-white border-neutral-950'
+                                : 'bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-100'
+                            }`}
+                          >
+                            {pct === 0 ? '0%' : `${pct}%`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-neutral-200 flex justify-between font-bold text-sm">
+                      <span>Total Harus Dibayar:</span>
+                      <span className="text-neutral-950">{formatRupiah(finalAmount)}</span>
+                    </div>
+
+                    <div className="pt-2 border-t border-neutral-200">
+                      <label className="block text-[11px] font-semibold text-neutral-600 mb-1">Metode Pelunasan</label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {(['Tunai', 'QRIS', 'Kartu Debit'] as const).map(m => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => setSettlementMethod(m)}
+                            className={`py-1.5 rounded-lg border text-xs font-semibold transition ${
+                              settlementMethod === m ? 'bg-neutral-950 text-white border-neutral-950' : 'bg-white text-neutral-700 border-neutral-200'
+                            }`}
+                          >
+                            {m}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {settlementMethod === 'Tunai' && (
+                      <div>
+                        <label className="block text-[11px] font-semibold text-neutral-600 mb-1">Uang Diterima</label>
+                        <input
+                          type="number"
+                          value={cashGiven || ''}
+                          onChange={e => setCashGiven(parseInt(e.target.value) || 0)}
+                          className="w-full bg-white border border-neutral-200 rounded-lg px-2.5 py-1.5 text-xs font-bold"
+                        />
+                        {/* Quick cash pills */}
+                        <div className="flex gap-1.5 mt-1.5">
+                          {[finalAmount, 50000, 100000].map(amt => (
+                            <button
+                              key={amt}
+                              type="button"
+                              onClick={() => setCashGiven(amt)}
+                              className="px-2 py-0.5 rounded bg-neutral-200 hover:bg-neutral-300 text-[10px] font-semibold text-neutral-700"
+                            >
+                              {formatRupiah(amt)}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="flex justify-between font-bold text-xs pt-2 mt-2 border-t border-neutral-200">
+                          <span>Kembalian:</span>
+                          <span className={cashGiven >= finalAmount ? 'text-emerald-700' : 'text-neutral-500'}>
+                            {formatRupiah(Math.max(0, cashGiven - finalAmount))}
+                          </span>
+                        </div>
                       </div>
                     )}
 
-                    {isCashierQrisExpired && (
-                      <div className="absolute inset-0 bg-neutral-950/70 backdrop-blur-xs flex flex-col items-center justify-center p-2 text-white text-center space-y-1.5">
-                        <AlertTriangle className="w-6 h-6 text-rose-400 mx-auto" />
-                        <p className="font-bold text-[11px]">KEDALUWARSA</p>
-                        <button
-                          type="button"
-                          onClick={handleRegenerateCashierQris}
-                          className="bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-2.5 py-1 rounded text-[10px] flex items-center gap-1"
-                        >
-                          <RefreshCw className="w-3 h-3" />
-                          <span>Generate Baru</span>
-                        </button>
+                    {settlementMethod === 'QRIS' && (
+                      <div className="text-center p-3 bg-white rounded-xl border border-neutral-200 space-y-2">
+                        <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
+                          <span className="font-bold text-xs text-neutral-900 tracking-wider">QRIS STANDAR NASIONAL</span>
+                          <span className="text-[10px] font-mono text-neutral-500">NMID: ID1020261118001</span>
+                        </div>
+
+                        {/* Countdown Timer Kasir */}
+                        <div className={`p-2 rounded-lg flex items-center justify-between text-xs ${
+                          isCashierQrisExpired 
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200' 
+                            : 'bg-amber-50 text-amber-900 border border-amber-200'
+                        }`}>
+                          <div className="flex items-center gap-1.5 font-semibold text-[11px]">
+                            <Clock className="w-3.5 h-3.5 text-amber-500" />
+                            <span>{isCashierQrisExpired ? 'QRIS Kedaluwarsa' : 'Batas Waktu Scan:'}</span>
+                          </div>
+                          <span className="font-mono font-bold text-xs">
+                            {isCashierQrisExpired 
+                              ? '00:00' 
+                              : `${String(Math.floor(cashierQrisTimeLeft / 60)).padStart(2, '0')}:${String(cashierQrisTimeLeft % 60).padStart(2, '0')}`}
+                          </span>
+                        </div>
+
+                        {/* QR Image with Expired Overlay */}
+                        <div className="relative p-2 bg-neutral-50 rounded-lg border border-neutral-200 inline-block overflow-hidden">
+                          {cashierQrisDataUrl ? (
+                            <img 
+                              src={cashierQrisDataUrl} 
+                              alt="QRIS Standar Pembayaran" 
+                              className={`w-44 h-44 mx-auto ${isCashierQrisExpired ? 'filter blur-[3px] opacity-40' : ''}`} 
+                            />
+                          ) : (
+                            <div className="w-44 h-44 flex items-center justify-center text-xs text-neutral-400">
+                              Membuat QRIS...
+                            </div>
+                          )}
+
+                          {isCashierQrisExpired && (
+                            <div className="absolute inset-0 bg-neutral-950/70 backdrop-blur-xs flex flex-col items-center justify-center p-2 text-white text-center space-y-1.5">
+                              <AlertTriangle className="w-6 h-6 text-rose-400 mx-auto" />
+                              <p className="font-bold text-[11px]">KEDALUWARSA</p>
+                              <button
+                                type="button"
+                                onClick={handleRegenerateCashierQris}
+                                className="bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-2.5 py-1 rounded text-[10px] flex items-center gap-1"
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                                <span>Generate Baru</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        <p className="text-[11px] font-medium text-neutral-600">
+                          Arahkan layar tablet/monitor ke pelanggan untuk scan
+                        </p>
+                        <p className="text-[10px] text-neutral-400">
+                          BCA Mobile, Livin by Mandiri, GoPay, OVO, ShopeePay, DANA, BRImo, LinkAja
+                        </p>
+                      </div>
+                    )}
+
+                    {settlementMethod === 'Kartu Debit' && (
+                      <div className="p-3 bg-neutral-100 rounded-xl text-neutral-700 text-xs space-y-1">
+                        <p className="font-semibold text-neutral-900">Pembayaran Mesin EDC / Debit</p>
+                        <p className="text-[11px] text-neutral-600">Gesek atau tap kartu pelanggan pada mesin EDC kasir sebesar:</p>
+                        <p className="text-base font-black text-neutral-950 font-mono">{formatRupiah(finalAmount)}</p>
                       </div>
                     )}
                   </div>
 
-                  <p className="text-[11px] font-medium text-neutral-600">
-                    Arahkan layar tablet/monitor ke pelanggan untuk scan
-                  </p>
-                  <p className="text-[10px] text-neutral-400">
-                    BCA Mobile, Livin by Mandiri, GoPay, OVO, ShopeePay, DANA, BRImo, LinkAja
-                  </p>
-                </div>
-              )}
-
-              {settlementMethod === 'Kartu Debit' && (
-                <div className="p-3 bg-neutral-100 rounded-xl text-neutral-700 text-xs space-y-1">
-                  <p className="font-semibold text-neutral-900">Pembayaran Mesin EDC / Debit</p>
-                  <p className="text-[11px] text-neutral-600">Gesek atau tap kartu pelanggan pada mesin EDC kasir sebesar:</p>
-                  <p className="text-base font-black text-neutral-950 font-mono">{formatRupiah(orderToPay.total_amount)}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={async () => {
-                  await handleUpdateStatus(orderToPay.id, { 
-                    payment_status: 'paid',
-                    payment_method: settlementMethod,
-                    cashier_name: activeCashier ? activeCashier.name : 'Kasir'
-                  });
-                  setSelectedOrderForReceipt({ 
-                    ...orderToPay, 
-                    payment_status: 'paid', 
-                    payment_method: settlementMethod,
-                    cashier_name: activeCashier ? activeCashier.name : 'Kasir'
-                  });
-                  setOrderToPay(null);
-                }}
-                className="grow bg-neutral-950 hover:bg-neutral-900 text-white font-semibold py-2 rounded-lg text-xs transition"
-              >
-                Konfirmasi & Cetak Struk
-              </button>
-              <button onClick={() => setOrderToPay(null)} className="px-3.5 bg-neutral-100 text-neutral-700 font-semibold py-2 rounded-lg text-xs">
-                Batal
-              </button>
-            </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        await handleUpdateStatus(orderToPay.id, { 
+                          payment_status: 'paid',
+                          payment_method: settlementMethod,
+                          cashier_name: activeCashier ? activeCashier.name : 'Kasir'
+                        });
+                        if (discAmt > 0) {
+                          await updateOrderDiscount(orderToPay.id, discAmt, finalAmount);
+                        }
+                        setSelectedOrderForReceipt({ 
+                          ...orderToPay, 
+                          total_amount: finalAmount,
+                          discount_amount: discAmt,
+                          payment_status: 'paid', 
+                          payment_method: settlementMethod,
+                          cashier_name: activeCashier ? activeCashier.name : 'Kasir'
+                        });
+                        setOrderToPay(null);
+                        setDiscountPercent(0);
+                      }}
+                      className="grow bg-neutral-950 hover:bg-neutral-900 text-white font-semibold py-2 rounded-lg text-xs transition"
+                    >
+                      Konfirmasi & Cetak Struk
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setOrderToPay(null);
+                        setDiscountPercent(0);
+                      }} 
+                      className="px-3.5 bg-neutral-100 text-neutral-700 font-semibold py-2 rounded-lg text-xs"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -1011,8 +1300,9 @@ export default function CashierPage() {
             <div className="p-4 overflow-y-auto grow bg-neutral-50 flex justify-center">
               <div id="thermalReceipt" className="w-[260px] bg-white p-3.5 shadow-sm border border-neutral-200 text-neutral-950 font-mono text-[11px] leading-tight">
                 <div className="text-center pb-2 border-b border-dashed border-neutral-300">
-                  <h2 className="font-bold text-xs uppercase tracking-wider">RASA NUSANTARA</h2>
-                  <p className="text-[10px] text-neutral-500 mt-0.5">Jl. Kuliner No. 88, Jakarta</p>
+                  <h2 className="font-bold text-xs uppercase tracking-wider">{setting?.name || 'RASA NUSANTARA'}</h2>
+                  <p className="text-[10px] text-neutral-500 mt-0.5">{setting?.address || 'Jl. Kuliner No. 88, Jakarta'}</p>
+                  {setting?.phone && <p className="text-[9px] text-neutral-400">Telp: {setting.phone}</p>}
                 </div>
 
                 <div className="py-2 border-b border-dashed border-neutral-300 space-y-0.5 text-[10px]">
@@ -1042,7 +1332,27 @@ export default function CashierPage() {
                 </div>
 
                 <div className="py-2 border-b border-dashed border-neutral-300 space-y-1 text-[10px]">
-                  <div className="flex justify-between font-bold text-xs">
+                  {selectedOrderForReceipt.discount_amount && selectedOrderForReceipt.discount_amount > 0 ? (
+                    <>
+                      <div className="flex justify-between text-neutral-500">
+                        <span>Subtotal:</span>
+                        <span>{formatRupiah(selectedOrderForReceipt.total_amount + selectedOrderForReceipt.discount_amount)}</span>
+                      </div>
+                      <div className="flex justify-between text-emerald-700">
+                        <span>Diskon Promo:</span>
+                        <span>- {formatRupiah(selectedOrderForReceipt.discount_amount)}</span>
+                      </div>
+                    </>
+                  ) : null}
+
+                  {selectedOrderForReceipt.tax_amount && selectedOrderForReceipt.tax_amount > 0 ? (
+                    <div className="flex justify-between text-neutral-500">
+                      <span>PB1 (Pajak 10%):</span>
+                      <span>{formatRupiah(selectedOrderForReceipt.tax_amount)}</span>
+                    </div>
+                  ) : null}
+
+                  <div className="flex justify-between font-bold text-xs pt-1 border-t border-dotted border-neutral-200">
                     <span>TOTAL:</span>
                     <span>{formatRupiah(selectedOrderForReceipt.total_amount)}</span>
                   </div>
@@ -1053,8 +1363,8 @@ export default function CashierPage() {
                 </div>
 
                 <div className="text-center pt-2 text-[9px] text-neutral-500 space-y-0.5">
-                  <p>Terima kasih atas kunjungan Anda</p>
-                  <p>WiFi: nusantara88</p>
+                  <p>{setting?.receipt_footer || 'Terima kasih atas kunjungan Anda'}</p>
+                  {setting?.wifi_password && <p>WiFi: {setting.wifi_password}</p>}
                 </div>
               </div>
             </div>
@@ -1068,6 +1378,117 @@ export default function CashierPage() {
                 <span>Cetak Struk</span>
               </button>
               <button onClick={() => setSelectedOrderForReceipt(null)} className="px-3.5 bg-neutral-100 text-neutral-700 font-semibold py-2 rounded-lg text-xs">
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Pindah Meja (Transfer Table) */}
+      {orderToTransfer && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-4 border border-neutral-200 shadow-xl space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
+              <div className="flex items-center space-x-2">
+                <ArrowRightLeft className="w-4 h-4 text-neutral-900" />
+                <h3 className="font-bold text-xs uppercase tracking-tight text-neutral-950">
+                  Pindahkan Meja {orderToTransfer.table_number}
+                </h3>
+              </div>
+              <button onClick={() => setOrderToTransfer(null)} className="text-neutral-400 hover:text-neutral-900">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-neutral-500">
+              Pilih meja baru untuk <strong>#{orderToTransfer.order_number.slice(-3)} ({orderToTransfer.customer_name})</strong>:
+            </p>
+
+            <div className="grid grid-cols-5 gap-2">
+              {tables.map(tbl => {
+                const isCurrent = tbl.table_number === orderToTransfer.table_number;
+                return (
+                  <button
+                    key={tbl.table_number}
+                    disabled={isCurrent}
+                    onClick={() => handleTransferTable(tbl.table_number)}
+                    className={`py-2.5 rounded-xl border text-xs font-bold transition ${
+                      isCurrent
+                        ? 'bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed'
+                        : 'bg-white hover:bg-neutral-950 hover:text-white border-neutral-200 text-neutral-800'
+                    }`}
+                  >
+                    {tbl.table_number}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Laporan Shift Kasir (Z-Report) */}
+      {isShiftReportOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-5 border border-neutral-200 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
+              <div className="flex items-center space-x-2">
+                <FileText className="w-4 h-4 text-neutral-900" />
+                <h3 className="font-bold text-xs uppercase tracking-tight text-neutral-950">Laporan Tutup Shift Kasir (Z-Report)</h3>
+              </div>
+              <button onClick={() => setIsShiftReportOpen(false)} className="text-neutral-400 hover:text-neutral-900">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="bg-neutral-50 p-3.5 rounded-xl border border-neutral-200 space-y-2 text-xs">
+              <div className="flex justify-between text-neutral-600">
+                <span>Staf Kasir:</span>
+                <span className="font-bold text-neutral-950">{activeCashier?.name || 'Kasir'}</span>
+              </div>
+              <div className="flex justify-between text-neutral-600">
+                <span>Waktu Rekap:</span>
+                <span className="font-mono text-neutral-950">{currentTime}</span>
+              </div>
+              <div className="pt-2 border-t border-neutral-200 space-y-1">
+                <div className="flex justify-between text-neutral-600">
+                  <span>Penjualan Tunai:</span>
+                  <span className="font-semibold text-neutral-900">
+                    {formatRupiah(orders.filter(o => o.payment_status === 'paid' && o.payment_method === 'Tunai').reduce((s, o) => s + o.total_amount, 0))}
+                  </span>
+                </div>
+                <div className="flex justify-between text-neutral-600">
+                  <span>Penjualan QRIS:</span>
+                  <span className="font-semibold text-neutral-900">
+                    {formatRupiah(orders.filter(o => o.payment_status === 'paid' && o.payment_method === 'QRIS').reduce((s, o) => s + o.total_amount, 0))}
+                  </span>
+                </div>
+                <div className="flex justify-between text-neutral-600">
+                  <span>Penjualan Debit / EDC:</span>
+                  <span className="font-semibold text-neutral-900">
+                    {formatRupiah(orders.filter(o => o.payment_status === 'paid' && o.payment_method === 'Kartu Debit').reduce((s, o) => s + o.total_amount, 0))}
+                  </span>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-neutral-200 flex justify-between font-bold text-sm">
+                <span>Total Omset Shift:</span>
+                <span className="text-emerald-700">{formatRupiah(totalSalesToday)}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => window.print()}
+                className="grow bg-neutral-950 hover:bg-neutral-900 text-white font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Cetak Rekap Shift (Thermal)</span>
+              </button>
+              <button
+                onClick={() => setIsShiftReportOpen(false)}
+                className="px-3.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold py-2.5 rounded-xl text-xs"
+              >
                 Tutup
               </button>
             </div>

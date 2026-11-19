@@ -26,7 +26,9 @@ import {
   AlertCircle,
   Eye,
   Menu as MenuIcon,
-  ChevronRight
+  ChevronRight,
+  FileSpreadsheet,
+  Download
 } from 'lucide-react';
 import { Expense, MenuItem, Order, User, RestaurantTable, RestaurantSetting } from '@/types/database';
 import { 
@@ -92,6 +94,8 @@ export default function AdminPage() {
   const [settingPhone, setSettingPhone] = useState('');
   const [settingWifi, setSettingWifi] = useState('');
   const [settingTax, setSettingTax] = useState<number>(0);
+  const [settingService, setSettingService] = useState<number>(0);
+  const [settingFooter, setSettingFooter] = useState('');
   const [settingSavedNotice, setSettingSavedNotice] = useState(false);
 
   const loadAllData = async () => {
@@ -116,7 +120,26 @@ export default function AdminPage() {
       setSettingPhone(st.phone);
       setSettingWifi(st.wifi_password);
       setSettingTax(st.tax_percent);
+      setSettingService(st.service_percent || 0);
+      setSettingFooter(st.receipt_footer || 'Terima kasih atas kunjungan Anda!');
     }
+  };
+
+  const handleExportCSV = () => {
+    const headers = ['ID,No_Order,Tipe,Meja,Pelanggan,Kasir,Metode_Bayar,Status_Bayar,Status_Pesanan,Total_Tagihan,Tanggal'];
+    const rows = orders.map(o => {
+      const date = new Date(o.created_at).toLocaleString('id-ID');
+      const table = o.order_type === 'takeaway' ? 'Takeaway' : `Meja ${o.table_number || ''}`;
+      return `"${o.id}","${o.order_number}","${o.order_type}","${table}","${o.customer_name}","${o.cashier_name || '-'}","${o.payment_method}","${o.payment_status}","${o.order_status}","${o.total_amount}","${date}"`;
+    });
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers, ...rows].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Laporan_Penjualan_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   useEffect(() => {
@@ -285,7 +308,9 @@ export default function AdminPage() {
       address: settingAddress.trim(),
       phone: settingPhone.trim(),
       wifi_password: settingWifi.trim(),
-      tax_percent: settingTax
+      tax_percent: settingTax,
+      service_percent: settingService,
+      receipt_footer: settingFooter.trim()
     });
     setSettingSavedNotice(true);
     setTimeout(() => setSettingSavedNotice(false), 3000);
@@ -870,9 +895,18 @@ export default function AdminPage() {
           {/* TAB 5: PESANAN & TRANSAKSI */}
           {activeTab === 'orders' && (
             <div className="space-y-4">
-              <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm">
-                <h3 className="font-bold text-sm text-neutral-950">Riwayat Pesanan & Transaksi Restoran</h3>
-                <p className="text-xs text-neutral-500">Semua pesanan yang masuk melalui Scan QR Meja dan Kasir POS</p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm">
+                <div>
+                  <h3 className="font-bold text-sm text-neutral-950">Riwayat Pesanan & Transaksi Restoran</h3>
+                  <p className="text-xs text-neutral-500">Semua pesanan yang masuk melalui Scan QR Meja dan Kasir POS</p>
+                </div>
+                <button
+                  onClick={handleExportCSV}
+                  className="bg-neutral-950 hover:bg-neutral-900 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition self-start sm:self-auto shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Export Laporan (CSV / Excel)</span>
+                </button>
               </div>
 
               <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
@@ -1042,6 +1076,41 @@ export default function AdminPage() {
                       className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-neutral-900"
                     />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-neutral-700 mb-1">Pajak Restoran PB1 (%)</label>
+                    <input
+                      type="number"
+                      value={settingTax}
+                      onChange={e => setSettingTax(parseInt(e.target.value) || 0)}
+                      className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-neutral-900"
+                    />
+                    <p className="text-[10px] text-neutral-400 mt-0.5">Misal: 10 untuk PB1 10%, atau 0 jika sudah nett.</p>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-neutral-700 mb-1">Service Charge (%)</label>
+                    <input
+                      type="number"
+                      value={settingService}
+                      onChange={e => setSettingService(parseInt(e.target.value) || 0)}
+                      className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-neutral-900"
+                    />
+                    <p className="text-[10px] text-neutral-400 mt-0.5">Biaya layanan restoran (opsional).</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-neutral-700 mb-1">Pesan Kaki Struk (Receipt Footer)</label>
+                  <input
+                    type="text"
+                    value={settingFooter}
+                    onChange={e => setSettingFooter(e.target.value)}
+                    placeholder="Contoh: Terima kasih atas kunjungan Anda!"
+                    className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-neutral-900"
+                  />
+                  <p className="text-[10px] text-neutral-400 mt-0.5">Teks yang akan dicetak di bagian paling bawah struk thermal kasir.</p>
                 </div>
 
                 <button
