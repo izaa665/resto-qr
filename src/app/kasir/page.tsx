@@ -24,7 +24,8 @@ import {
   KeyRound,
   Shield,
   User as UserIcon,
-  AlertTriangle
+  AlertTriangle,
+  CheckCircle2
 } from 'lucide-react';
 import { Order, MenuItem, RestaurantTable, OrderItem, PaymentStatus, OrderStatus, User } from '@/types/database';
 import { 
@@ -50,7 +51,7 @@ export default function CashierPage() {
   const [loginError, setLoginError] = useState<string>('');
   const [isAuthLoaded, setIsAuthLoaded] = useState<boolean>(false);
 
-  const [filter, setFilter] = useState<'active' | 'unpaid' | 'paid' | 'all'>('active');
+  const [filter, setFilter] = useState<'active' | 'unpaid' | 'paid' | 'all' | 'waiting_qris'>('active');
   const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState<Order | null>(null);
   const [currentTime, setCurrentTime] = useState('');
   const [previousPendingCount, setPreviousPendingCount] = useState<number>(0);
@@ -266,16 +267,19 @@ export default function CashierPage() {
     }
   };
 
+  const isPendingPayment = (o: Order) => o.payment_status === 'unpaid' || o.payment_status === 'waiting_confirmation';
+  const waitingQrisOrders = orders.filter(o => o.payment_status === 'waiting_confirmation' && o.order_status !== 'cancelled');
+  const unpaidCount = orders.filter(o => isPendingPayment(o) && o.order_status !== 'cancelled').length;
+  const activeOrdersCount = orders.filter(o => o.order_status !== 'completed' && o.order_status !== 'cancelled').length;
+  const totalSalesToday = orders.filter(o => o.payment_status === 'paid').reduce((s, o) => s + o.total_amount, 0);
+
   const filteredOrders = orders.filter(o => {
     if (filter === 'active') return o.order_status !== 'completed' && o.order_status !== 'cancelled';
-    if (filter === 'unpaid') return o.payment_status === 'unpaid';
+    if (filter === 'waiting_qris') return o.payment_status === 'waiting_confirmation';
+    if (filter === 'unpaid') return isPendingPayment(o);
     if (filter === 'paid') return o.payment_status === 'paid';
     return true;
   });
-
-  const unpaidCount = orders.filter(o => o.payment_status === 'unpaid').length;
-  const activeOrdersCount = orders.filter(o => o.order_status !== 'completed' && o.order_status !== 'cancelled').length;
-  const totalSalesToday = orders.filter(o => o.payment_status === 'paid').reduce((s, o) => s + o.total_amount, 0);
 
   // Cashier Login Screen if not logged in
   if (isAuthLoaded && !activeCashier) {
@@ -479,18 +483,31 @@ export default function CashierPage() {
 
         {/* Filter Bar */}
         <div className="bg-white rounded-xl p-2.5 border border-neutral-200 mb-4 flex items-center justify-between">
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setFilter('active')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
                 filter === 'active' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:bg-neutral-100'
               }`}
             >
               Pesanan Aktif ({activeOrdersCount})
             </button>
+
+            {waitingQrisOrders.length > 0 && (
+              <button
+                onClick={() => setFilter('waiting_qris')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+                  filter === 'waiting_qris' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping"></span>
+                <span>Verifikasi QRIS ({waitingQrisOrders.length})</span>
+              </button>
+            )}
+
             <button
               onClick={() => setFilter('unpaid')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
                 filter === 'unpaid' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:bg-neutral-100'
               }`}
             >
@@ -498,7 +515,7 @@ export default function CashierPage() {
             </button>
             <button
               onClick={() => setFilter('paid')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
                 filter === 'paid' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:bg-neutral-100'
               }`}
             >
@@ -506,7 +523,7 @@ export default function CashierPage() {
             </button>
             <button
               onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
                 filter === 'all' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:bg-neutral-100'
               }`}
             >
@@ -516,7 +533,7 @@ export default function CashierPage() {
 
           <button
             onClick={loadAll}
-            className="text-neutral-500 hover:text-neutral-900 p-1.5 transition"
+            className="text-neutral-500 hover:text-neutral-900 p-1.5 transition ml-2 shrink-0"
             title="Refresh"
           >
             <RefreshCw className="w-4 h-4" />
@@ -526,33 +543,67 @@ export default function CashierPage() {
         {/* Orders Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {filteredOrders.map(order => {
-            const isUnpaid = order.payment_status === 'unpaid';
             const isCompleted = order.order_status === 'completed';
+            const isPaid = order.payment_status === 'paid';
+            const isWaitingConfirmation = order.payment_status === 'waiting_confirmation';
+            const isUnpaid = order.payment_status === 'unpaid';
 
             return (
               <div
                 key={order.id}
-                className="bg-white rounded-xl border border-neutral-200 p-4 flex flex-col justify-between hover:border-neutral-300 transition"
+                className={`bg-white rounded-xl border p-4 flex flex-col justify-between transition ${
+                  isWaitingConfirmation 
+                    ? 'border-blue-300 ring-1 ring-blue-300 shadow-xs' 
+                    : 'border-neutral-200 hover:border-neutral-300'
+                }`}
               >
                 <div>
                   <div className="flex items-start justify-between pb-2.5 border-b border-neutral-100">
                     <div>
-                      <div className="flex items-center space-x-1.5">
+                      <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
                         <span className="font-bold text-xs uppercase text-neutral-950">
                           {order.order_type === 'takeaway' ? 'Takeaway' : `Meja ${order.table_number}`}
                         </span>
                         <span className="text-xs font-mono text-neutral-400">#{order.order_number.slice(-3)}</span>
+
+                        {/* Kitchen / Order Status Indicator */}
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                          order.order_status === 'pending'
+                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                            : order.order_status === 'processing'
+                            ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                            : order.order_status === 'ready'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold'
+                            : 'bg-neutral-100 text-neutral-600'
+                        }`}>
+                          {order.order_status === 'pending' && 'Antre Dapur'}
+                          {order.order_status === 'processing' && 'Dimasak'}
+                          {order.order_status === 'ready' && 'Siap Saji'}
+                          {order.order_status === 'completed' && 'Selesai'}
+                          {order.order_status === 'cancelled' && 'Batal'}
+                        </span>
                       </div>
                       <p className="text-xs text-neutral-500 mt-0.5">{order.customer_name}</p>
                     </div>
 
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
-                      order.payment_status === 'paid'
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : 'bg-amber-50 text-amber-700 border-amber-200'
-                    }`}>
-                      {order.payment_status === 'paid' ? 'LUNAS' : 'BELUM BAYAR'}
-                    </span>
+                    {/* Payment Badge */}
+                    <div>
+                      {isPaid ? (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded border bg-emerald-50 text-emerald-700 border-emerald-200 flex items-center gap-1">
+                          <Check className="w-3 h-3" />
+                          <span>LUNAS ({order.payment_method || 'Kasir'})</span>
+                        </span>
+                      ) : isWaitingConfirmation ? (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded border bg-blue-50 text-blue-700 border-blue-300 flex items-center gap-1.5 animate-pulse">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                          <span>VERIFIKASI QRIS</span>
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200">
+                          BELUM BAYAR
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Item List */}
@@ -571,17 +622,37 @@ export default function CashierPage() {
                         <span className="font-medium text-neutral-500 shrink-0">{formatRupiah(item.subtotal)}</span>
                       </div>
                     ))}
+                    {order.notes && (
+                      <p className="text-[10px] text-neutral-500 italic pt-1 border-t border-neutral-100">
+                        Catatan: {order.notes}
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                <div className="pt-2.5 border-t border-neutral-100">
-                  <div className="flex justify-between items-baseline mb-3 text-xs">
+                <div className="pt-2.5 border-t border-neutral-100 space-y-2">
+                  <div className="flex justify-between items-baseline text-xs">
                     <span className="text-neutral-500 font-medium">Tagihan</span>
                     <span className="text-sm font-bold text-neutral-950">{formatRupiah(order.total_amount)}</span>
                   </div>
 
+                  {/* Actions Grid */}
                   <div className="grid grid-cols-2 gap-2">
-                    {isUnpaid ? (
+                    {isWaitingConfirmation ? (
+                      <button
+                        onClick={async () => {
+                          await handleUpdateStatus(order.id, {
+                            payment_status: 'paid',
+                            payment_method: 'QRIS',
+                            cashier_name: activeCashier ? activeCashier.name : 'Kasir'
+                          });
+                        }}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 transition shadow-xs"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Terima QRIS</span>
+                      </button>
+                    ) : isUnpaid ? (
                       <button
                         onClick={() => {
                           setOrderToPay(order);
@@ -592,12 +663,17 @@ export default function CashierPage() {
                         Bayar (Settle)
                       </button>
                     ) : (
+                      /* Sudah LUNAS */
                       <button
                         disabled={isCompleted}
                         onClick={() => handleUpdateStatus(order.id, { order_status: 'completed' })}
-                        className="bg-neutral-100 hover:bg-neutral-200 text-neutral-800 disabled:opacity-50 font-semibold py-2 rounded-lg text-xs transition"
+                        className={`font-semibold py-2 rounded-lg text-xs transition ${
+                          isCompleted
+                            ? 'bg-neutral-100 text-neutral-400 cursor-default'
+                            : 'bg-neutral-900 hover:bg-neutral-800 text-white'
+                        }`}
                       >
-                        {isCompleted ? 'Selesai' : 'Tutup Tagihan'}
+                        {isCompleted ? '✓ Selesai' : 'Tutup Tagihan'}
                       </button>
                     )}
 

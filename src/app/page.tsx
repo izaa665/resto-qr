@@ -22,7 +22,16 @@ import {
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Category, MenuItem, OrderItem, RestaurantTable, Order } from '@/types/database';
-import { fetchCategories, fetchMenus, fetchTables, createOrder, fetchOrders, updateOrderStatus } from '@/lib/supabase';
+import { 
+  fetchCategories, 
+  fetchMenus, 
+  fetchTables, 
+  createOrder, 
+  fetchOrders, 
+  updateOrderStatus,
+  supabase,
+  isSupabaseConfigured
+} from '@/lib/supabase';
 import { formatRupiah } from '@/lib/utils';
 
 function CustomerOrderContent() {
@@ -105,18 +114,69 @@ function CustomerOrderContent() {
     loadData();
   }, []);
 
-  // Poll order status if active
+  // Restore active order from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedOrderId = localStorage.getItem('resto_active_order_id');
+      if (savedOrderId) {
+        fetchOrders().then(all => {
+          const found = all.find(o => String(o.id) === savedOrderId);
+          if (found && found.order_status !== 'completed' && found.order_status !== 'cancelled') {
+            setActiveOrder(found);
+          } else {
+            localStorage.removeItem('resto_active_order_id');
+          }
+        });
+      }
+    } catch (e) {}
+  }, []);
+
+  // Supabase Realtime & Polling for activeOrder
   useEffect(() => {
     if (!activeOrder) return;
-    const interval = setInterval(async () => {
-      const all = await fetchOrders();
-      const updated = all.find(o => o.id === activeOrder.id || o.order_number === activeOrder.order_number);
-      if (updated) {
-        setActiveOrder(updated);
-      }
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [activeOrder]);
+
+    if (isSupabaseConfigured && supabase) {
+      const channel = supabase
+        .channel(`order-track-${activeOrder.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'orders',
+            filter: `id=eq.${activeOrder.id}`
+          },
+          (payload: any) => {
+            if (payload.new) {
+              setActiveOrder(prev => (prev ? { ...prev, ...payload.new } : payload.new));
+            }
+          }
+        )
+        .subscribe();
+
+      const pollInterval = setInterval(async () => {
+        const all = await fetchOrders();
+        const updated = all.find(o => o.id === activeOrder.id || o.order_number === activeOrder.order_number);
+        if (updated) {
+          setActiveOrder(updated);
+        }
+      }, 4000);
+
+      return () => {
+        supabase.removeChannel(channel);
+        clearInterval(pollInterval);
+      };
+    } else {
+      const interval = setInterval(async () => {
+        const all = await fetchOrders();
+        const updated = all.find(o => o.id === activeOrder.id || o.order_number === activeOrder.order_number);
+        if (updated) {
+          setActiveOrder(updated);
+        }
+      }, 2500);
+      return () => clearInterval(interval);
+    }
+  }, [activeOrder?.id]);
 
   // Generate QRIS Data URL when activeOrder or QRIS opens (dynamic per version)
   useEffect(() => {
@@ -207,6 +267,9 @@ function CustomerOrderContent() {
 
       if (result.success && result.order) {
         setActiveOrder(result.order);
+        try {
+          localStorage.setItem('resto_active_order_id', String(result.order.id));
+        } catch (e) {}
         setCart([]);
         setIsCartOpen(false);
 
@@ -283,12 +346,14 @@ function CustomerOrderContent() {
               </div>
               <div className="text-right">
                 {activeOrder.payment_status === 'paid' ? (
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md border bg-emerald-50 text-emerald-700 border-emerald-200">
-                    Lunas
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-md border bg-emerald-50 text-emerald-700 border-emerald-200 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Lunas ({activeOrder.payment_method || 'Kasir'})</span>
                   </span>
                 ) : activeOrder.payment_status === 'waiting_confirmation' ? (
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md border bg-blue-50 text-blue-700 border-blue-200">
-                    Menunggu Verifikasi Kasir
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md border bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1.5 animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                    <span>Menunggu Verifikasi Kasir</span>
                   </span>
                 ) : (
                   <button
@@ -306,26 +371,42 @@ function CustomerOrderContent() {
             <div className="grid grid-cols-3 gap-2 pt-3">
               <div className={`p-2 rounded-lg text-center border text-[11px] ${
                 activeOrder.order_status === 'pending'
-                  ? 'bg-neutral-900 text-white border-neutral-900 font-semibold'
+                  ? 'bg-neutral-900 text-white border-neutral-900 font-semibold shadow-xs'
                   : 'bg-neutral-50 text-neutral-500 border-neutral-200'
               }`}>
                 1. Diterima
               </div>
               <div className={`p-2 rounded-lg text-center border text-[11px] ${
                 activeOrder.order_status === 'processing'
-                  ? 'bg-blue-600 text-white border-blue-600 font-semibold'
+                  ? 'bg-blue-600 text-white border-blue-600 font-semibold shadow-xs'
                   : 'bg-neutral-50 text-neutral-500 border-neutral-200'
               }`}>
                 2. Dimasak
               </div>
               <div className={`p-2 rounded-lg text-center border text-[11px] ${
                 activeOrder.order_status === 'ready' || activeOrder.order_status === 'completed'
-                  ? 'bg-emerald-600 text-white border-emerald-600 font-semibold'
+                  ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-xs'
                   : 'bg-neutral-50 text-neutral-500 border-neutral-200'
               }`}>
                 3. Siap Saji
               </div>
             </div>
+
+            {/* If Order is completed */}
+            {activeOrder.order_status === 'completed' && (
+              <div className="mt-3 pt-3 border-t border-neutral-100 flex items-center justify-between">
+                <span className="text-xs text-emerald-700 font-semibold">✓ Pesanan Anda telah selesai disajikan.</span>
+                <button
+                  onClick={() => {
+                    setActiveOrder(null);
+                    try { localStorage.removeItem('resto_active_order_id'); } catch (e) {}
+                  }}
+                  className="text-[11px] font-bold bg-neutral-950 hover:bg-neutral-800 text-white px-3 py-1.5 rounded-lg transition"
+                >
+                  Pesan Lagi
+                </button>
+              </div>
+            )}
           </div>
         )}
 
