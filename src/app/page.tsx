@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
   Search, 
   Plus, 
@@ -42,6 +43,7 @@ import {
 import { formatRupiah } from '@/lib/utils';
 
 function CustomerOrderContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialTableParam = parseInt(searchParams.get('meja') || '5', 10);
 
@@ -335,11 +337,8 @@ function CustomerOrderContent() {
         setCart([]);
         setIsCartOpen(false);
 
-        // Jika metode pembayaran QRIS, langsung jalankan timer 5 menit dan buka modal
-        if (paymentMethod === 'QRIS') {
-          handleRegenerateQris();
-          setIsQrisModalOpen(true);
-        }
+        // Masuk langsung ke halaman status pesanan baru
+        router.push(`/status?id=${result.order.id}&meja=${tableNumber}`);
       } else {
         alert(result.error || 'Gagal mengirim pesanan');
       }
@@ -386,9 +385,21 @@ function CustomerOrderContent() {
           </div>
 
           <div className="flex items-center space-x-1.5">
+            {activeOrder && activeOrder.order_status !== 'completed' && activeOrder.order_status !== 'cancelled' && (
+              <Link
+                href={`/status?id=${activeOrder.id}&meja=${activeOrder.table_number || tableNumber}`}
+                className="flex items-center space-x-1 bg-amber-500 hover:bg-amber-400 text-neutral-950 px-2 py-1.5 rounded-lg text-xs font-bold transition shadow-xs animate-pulse"
+                title="Lihat status pesanan Anda"
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">Status Pesanan</span>
+                <span className="xs:hidden">Status</span>
+              </Link>
+            )}
+
             <button
               onClick={() => setIsCallWaiterOpen(true)}
-              className="flex items-center space-x-1 bg-amber-500 hover:bg-amber-400 text-neutral-950 px-2.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs"
+              className="flex items-center space-x-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 border border-amber-500/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
               title="Panggil pelayan ke meja Anda"
             >
               <Bell className="w-3.5 h-3.5" />
@@ -409,137 +420,35 @@ function CustomerOrderContent() {
       {/* Main Content */}
       <main className="max-w-md mx-auto px-4 pt-4">
 
-        {/* Scan Mismatch Alert: When customer scans a new table QR */}
-        {showScanMismatchPrompt && activeOrder && (
-          <div className="bg-amber-500 text-neutral-950 p-3.5 rounded-xl mb-4 shadow-md flex items-start justify-between gap-3 border border-amber-600/30 animate-in fade-in">
-            <div className="text-xs">
-              <p className="font-bold flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4 text-neutral-950 shrink-0" />
-                <span>Pindah Duduk ke Meja {initialTableParam}?</span>
-              </p>
-              <p className="text-[11px] mt-1 text-neutral-950 leading-relaxed">
-                Anda memindai kode QR <strong>Meja {initialTableParam}</strong>, tetapi pesanan aktif Anda tercatat di <strong>Meja {activeOrder.table_number || tableNumber}</strong>.
-              </p>
-              <div className="flex gap-2 mt-2.5">
-                <button
-                  disabled={isTransferringTable}
-                  onClick={() => handleCustomerTransferTable(initialTableParam)}
-                  className="bg-neutral-950 text-white font-bold px-3 py-1.5 rounded-lg text-[11px] hover:bg-neutral-800 transition active:scale-95"
-                >
-                  {isTransferringTable ? 'Memindahkan...' : `Ya, Pindah ke Meja ${initialTableParam}`}
-                </button>
-                <button
-                  onClick={() => setShowScanMismatchPrompt(false)}
-                  className="bg-amber-400/80 text-neutral-950 font-semibold px-2.5 py-1.5 rounded-lg text-[11px] hover:bg-amber-300 transition"
-                >
-                  Tetap Meja {activeOrder.table_number || tableNumber}
-                </button>
-              </div>
-            </div>
-            <button 
-              onClick={() => setShowScanMismatchPrompt(false)} 
-              className="text-neutral-900 hover:text-black p-0.5"
+        {/* Floating Active Order Status Bar (Discreet, Clean, Click to open Status Page) */}
+        {activeOrder && activeOrder.order_status !== 'completed' && activeOrder.order_status !== 'cancelled' && (
+          <div className="fixed bottom-20 left-4 right-4 z-40 max-w-md mx-auto">
+            <Link
+              href={`/status?id=${activeOrder.id}&meja=${activeOrder.table_number || tableNumber}`}
+              className="bg-neutral-950 text-white p-3 rounded-2xl shadow-2xl flex items-center justify-between border border-neutral-800 hover:bg-neutral-900 transition group"
             >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
-        {/* Active Order Tracker */}
-        {activeOrder && (
-          <div className="bg-white rounded-xl border border-neutral-200 p-4 mb-4 shadow-sm">
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
-              <div>
-                <p className="text-[11px] uppercase tracking-wider font-semibold text-neutral-400">Status Pesanan</p>
-                <p className="font-mono text-xs font-bold text-neutral-900 mt-0.5">{activeOrder.order_number}</p>
+              <div className="flex items-center space-x-2.5 overflow-hidden">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div className="overflow-hidden text-xs">
+                  <p className="font-bold text-white truncate flex items-center gap-1.5">
+                    <span>Meja {activeOrder.table_number || tableNumber}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span className="text-[11px] text-emerald-400 font-semibold">
+                      {activeOrder.order_status === 'pending' ? 'Pesanan Diterima' : activeOrder.order_status === 'processing' ? 'Sedang Dimasak' : 'Siap Saji'}
+                    </span>
+                  </p>
+                  <p className="text-[10px] text-neutral-400 truncate">
+                    #{activeOrder.order_number} • Sentuh untuk lihat detail & QRIS
+                  </p>
+                </div>
               </div>
-              <div className="text-right">
-                {activeOrder.payment_status === 'paid' ? (
-                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-md border bg-emerald-50 text-emerald-700 border-emerald-200 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Lunas ({activeOrder.payment_method || 'Kasir'})</span>
-                  </span>
-                ) : activeOrder.payment_status === 'waiting_confirmation' ? (
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md border bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1.5 animate-pulse">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-                    <span>Menunggu Verifikasi Kasir</span>
-                  </span>
-                ) : (
-                  <button
-                    onClick={handleOpenQrisModal}
-                    className="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-neutral-950 text-white flex items-center gap-1.5 hover:bg-neutral-800 transition shadow-sm"
-                  >
-                    <QrCode className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Bayar QRIS ({isQrisExpired ? 'Expired' : formatTimer(qrisTimeLeft)})</span>
-                  </button>
-                )}
+              <div className="flex items-center space-x-1 text-amber-400 text-xs font-bold shrink-0 pl-2">
+                <span>Detail</span>
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition" />
               </div>
-            </div>
-
-            {/* Stepper Status */}
-            <div className="grid grid-cols-3 gap-2 pt-3">
-              <div className={`p-2 rounded-lg text-center border text-[11px] ${
-                activeOrder.order_status === 'pending'
-                  ? 'bg-neutral-900 text-white border-neutral-900 font-semibold shadow-xs'
-                  : 'bg-neutral-50 text-neutral-500 border-neutral-200'
-              }`}>
-                1. Diterima
-              </div>
-              <div className={`p-2 rounded-lg text-center border text-[11px] ${
-                activeOrder.order_status === 'processing'
-                  ? 'bg-blue-600 text-white border-blue-600 font-semibold shadow-xs'
-                  : 'bg-neutral-50 text-neutral-500 border-neutral-200'
-              }`}>
-                2. Dimasak
-              </div>
-              <div className={`p-2 rounded-lg text-center border text-[11px] ${
-                activeOrder.order_status === 'ready' || activeOrder.order_status === 'completed'
-                  ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-xs'
-                  : 'bg-neutral-50 text-neutral-500 border-neutral-200'
-              }`}>
-                3. Siap Saji
-              </div>
-            </div>
-
-            {/* Table Location & Self-Transfer Button */}
-            <div className="mt-3 pt-2.5 border-t border-neutral-100 flex items-center justify-between text-xs">
-              <span className="text-neutral-600 font-medium flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-neutral-400" />
-                <span>Posisi: <strong className="text-neutral-950">Meja {activeOrder.table_number || tableNumber}</strong></span>
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsCustomerTransferModalOpen(true)}
-                className="text-[11px] font-semibold text-neutral-800 bg-neutral-100 hover:bg-neutral-200 px-2.5 py-1 rounded-lg transition flex items-center gap-1 border border-neutral-200 active:scale-95"
-              >
-                <ArrowLeftRight className="w-3 h-3 text-neutral-600" />
-                <span>Pindah Meja</span>
-              </button>
-            </div>
-
-            {/* Notice transfer success */}
-            {transferNotice && (
-              <div className="mt-2.5 p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs flex items-center gap-1.5 animate-in fade-in">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>{transferNotice}</span>
-              </div>
-            )}
-
-            {/* If Order is completed */}
-            {activeOrder.order_status === 'completed' && (
-              <div className="mt-3 pt-3 border-t border-neutral-100 flex items-center justify-between">
-                <span className="text-xs text-emerald-700 font-semibold">✓ Pesanan Anda telah selesai disajikan.</span>
-                <button
-                  onClick={() => {
-                    setActiveOrder(null);
-                    try { localStorage.removeItem('resto_active_order_id'); } catch (e) {}
-                  }}
-                  className="text-[11px] font-bold bg-neutral-950 hover:bg-neutral-800 text-white px-3 py-1.5 rounded-lg transition"
-                >
-                  Pesan Lagi
-                </button>
-              </div>
-            )}
+            </Link>
           </div>
         )}
 
