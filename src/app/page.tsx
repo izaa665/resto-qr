@@ -21,7 +21,8 @@ import {
   Timer,
   Bell,
   Wifi,
-  ChevronRight
+  ChevronRight,
+  ArrowLeftRight
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Category, MenuItem, OrderItem, RestaurantTable, Order, RestaurantSetting } from '@/types/database';
@@ -34,6 +35,7 @@ import {
   updateOrderStatus,
   fetchSetting,
   createWaiterCall,
+  updateOrderTable,
   supabase,
   isSupabaseConfigured
 } from '@/lib/supabase';
@@ -74,6 +76,36 @@ function CustomerOrderContent() {
   const [qrisTimeLeft, setQrisTimeLeft] = useState<number>(300); // 300 detik = 5 menit
   const [isQrisExpired, setIsQrisExpired] = useState<boolean>(false);
   const [qrisVersion, setQrisVersion] = useState<number>(1);
+
+  // Customer Table Transfer states
+  const [isCustomerTransferModalOpen, setIsCustomerTransferModalOpen] = useState(false);
+  const [isTransferringTable, setIsTransferringTable] = useState(false);
+  const [transferNotice, setTransferNotice] = useState('');
+  const [showScanMismatchPrompt, setShowScanMismatchPrompt] = useState(false);
+
+  // Check if scanned table is different from active order table
+  useEffect(() => {
+    if (activeOrder && activeOrder.table_number && initialTableParam && activeOrder.table_number !== initialTableParam) {
+      setShowScanMismatchPrompt(true);
+    } else {
+      setShowScanMismatchPrompt(false);
+    }
+  }, [activeOrder?.table_number, initialTableParam]);
+
+  const handleCustomerTransferTable = async (newTableNum: number) => {
+    if (!activeOrder) return;
+    const oldTable = activeOrder.table_number || tableNumber;
+    setIsTransferringTable(true);
+    await updateOrderTable(activeOrder.id, newTableNum);
+    await createWaiterCall(newTableNum, `Pindah Meja (dari Meja ${oldTable})`, customerName);
+    setTableNumber(newTableNum);
+    setActiveOrder(prev => (prev ? { ...prev, table_number: newTableNum } : null));
+    setIsTransferringTable(false);
+    setIsCustomerTransferModalOpen(false);
+    setShowScanMismatchPrompt(false);
+    setTransferNotice(`Berhasil pindah ke Meja ${newTableNum}! Dapur dan Kasir telah diperbarui.`);
+    setTimeout(() => setTransferNotice(''), 4000);
+  };
 
   // QRIS Countdown Timer
   useEffect(() => {
@@ -377,6 +409,42 @@ function CustomerOrderContent() {
       {/* Main Content */}
       <main className="max-w-md mx-auto px-4 pt-4">
 
+        {/* Scan Mismatch Alert: When customer scans a new table QR */}
+        {showScanMismatchPrompt && activeOrder && (
+          <div className="bg-amber-500 text-neutral-950 p-3.5 rounded-xl mb-4 shadow-md flex items-start justify-between gap-3 border border-amber-600/30 animate-in fade-in">
+            <div className="text-xs">
+              <p className="font-bold flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-neutral-950 shrink-0" />
+                <span>Pindah Duduk ke Meja {initialTableParam}?</span>
+              </p>
+              <p className="text-[11px] mt-1 text-neutral-950 leading-relaxed">
+                Anda memindai kode QR <strong>Meja {initialTableParam}</strong>, tetapi pesanan aktif Anda tercatat di <strong>Meja {activeOrder.table_number || tableNumber}</strong>.
+              </p>
+              <div className="flex gap-2 mt-2.5">
+                <button
+                  disabled={isTransferringTable}
+                  onClick={() => handleCustomerTransferTable(initialTableParam)}
+                  className="bg-neutral-950 text-white font-bold px-3 py-1.5 rounded-lg text-[11px] hover:bg-neutral-800 transition active:scale-95"
+                >
+                  {isTransferringTable ? 'Memindahkan...' : `Ya, Pindah ke Meja ${initialTableParam}`}
+                </button>
+                <button
+                  onClick={() => setShowScanMismatchPrompt(false)}
+                  className="bg-amber-400/80 text-neutral-950 font-semibold px-2.5 py-1.5 rounded-lg text-[11px] hover:bg-amber-300 transition"
+                >
+                  Tetap Meja {activeOrder.table_number || tableNumber}
+                </button>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowScanMismatchPrompt(false)} 
+              className="text-neutral-900 hover:text-black p-0.5"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Active Order Tracker */}
         {activeOrder && (
           <div className="bg-white rounded-xl border border-neutral-200 p-4 mb-4 shadow-sm">
@@ -432,6 +500,30 @@ function CustomerOrderContent() {
                 3. Siap Saji
               </div>
             </div>
+
+            {/* Table Location & Self-Transfer Button */}
+            <div className="mt-3 pt-2.5 border-t border-neutral-100 flex items-center justify-between text-xs">
+              <span className="text-neutral-600 font-medium flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-neutral-400" />
+                <span>Posisi: <strong className="text-neutral-950">Meja {activeOrder.table_number || tableNumber}</strong></span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsCustomerTransferModalOpen(true)}
+                className="text-[11px] font-semibold text-neutral-800 bg-neutral-100 hover:bg-neutral-200 px-2.5 py-1 rounded-lg transition flex items-center gap-1 border border-neutral-200 active:scale-95"
+              >
+                <ArrowLeftRight className="w-3 h-3 text-neutral-600" />
+                <span>Pindah Meja</span>
+              </button>
+            </div>
+
+            {/* Notice transfer success */}
+            {transferNotice && (
+              <div className="mt-2.5 p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs flex items-center gap-1.5 animate-in fade-in">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>{transferNotice}</span>
+              </div>
+            )}
 
             {/* If Order is completed */}
             {activeOrder.order_status === 'completed' && (
@@ -902,6 +994,61 @@ function CustomerOrderContent() {
                   {tbl.table_number}
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Pindah Meja Pelanggan */}
+      {isCustomerTransferModalOpen && activeOrder && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-white rounded-2xl p-5 shadow-2xl border border-neutral-200 space-y-4 animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-600">
+                  <ArrowLeftRight className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-neutral-950">Pindah Nomor Meja</h3>
+                  <p className="text-[10px] text-neutral-500">Pindahkan pesanan ke meja baru</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsCustomerTransferModalOpen(false)}
+                className="text-neutral-400 hover:text-neutral-900 p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-neutral-600 leading-relaxed">
+              Pesanan Anda saat ini tercatat di <strong className="text-neutral-950">Meja {activeOrder.table_number || tableNumber}</strong>. Silakan sentuh nomor meja baru tempat Anda pindah duduk:
+            </p>
+
+            <div className="grid grid-cols-5 gap-2">
+              {tables.map(tbl => {
+                const isCurrent = (activeOrder.table_number || tableNumber) === tbl.table_number;
+                return (
+                  <button
+                    key={tbl.table_number}
+                    disabled={isCurrent || isTransferringTable}
+                    onClick={() => handleCustomerTransferTable(tbl.table_number)}
+                    className={`py-3 rounded-xl border text-center font-bold text-xs transition ${
+                      isCurrent
+                        ? 'bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed opacity-60'
+                        : 'bg-white hover:bg-neutral-950 hover:text-white border-neutral-300 text-neutral-900 shadow-xs active:scale-95'
+                    }`}
+                  >
+                    M-{tbl.table_number}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="p-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-center">
+              <p className="text-[11px] text-neutral-500">
+                Layar Dapur dan Kasir akan otomatis diperbarui secara realtime agar makanan tidak salah diantar.
+              </p>
             </div>
           </div>
         </div>

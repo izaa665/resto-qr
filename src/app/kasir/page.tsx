@@ -31,7 +31,8 @@ import {
   FileText,
   ArrowRightLeft,
   Percent,
-  Wifi
+  Wifi,
+  Sparkles
 } from 'lucide-react';
 import { 
   Order, 
@@ -77,6 +78,7 @@ export default function CashierPage() {
 
   const [filter, setFilter] = useState<'active' | 'unpaid' | 'paid' | 'all' | 'waiting_qris'>('active');
   const [viewMode, setViewMode] = useState<'cards' | 'tables'>('cards');
+  const [dirtyTables, setDirtyTables] = useState<number[]>([]);
   const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState<Order | null>(null);
   const [orderToTransfer, setOrderToTransfer] = useState<Order | null>(null);
   const [isShiftReportOpen, setIsShiftReportOpen] = useState<boolean>(false);
@@ -84,6 +86,38 @@ export default function CashierPage() {
   const [currentTime, setCurrentTime] = useState('');
   const [previousPendingCount, setPreviousPendingCount] = useState<number>(0);
   const [previousCallCount, setPreviousCallCount] = useState<number>(0);
+
+  // Load dirty tables from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('klir_dirty_tables');
+      if (saved) setDirtyTables(JSON.parse(saved));
+    } catch (e) {}
+  }, []);
+
+  const markTableClean = (tableNum: number) => {
+    setDirtyTables(prev => {
+      const updated = prev.filter(t => t !== tableNum);
+      try { localStorage.setItem('klir_dirty_tables', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
+  };
+
+  const markTableDirty = (tableNum: number) => {
+    setDirtyTables(prev => {
+      if (prev.includes(tableNum)) return prev;
+      const updated = [...prev, tableNum];
+      try { localStorage.setItem('klir_dirty_tables', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
+  };
+
+  const handleCloseOrder = async (order: Order) => {
+    await handleUpdateStatus(order.id, { order_status: 'completed' });
+    if (order.table_number) {
+      markTableDirty(order.table_number);
+    }
+  };
 
   // Check saved cashier shift
   useEffect(() => {
@@ -643,115 +677,196 @@ export default function CashierPage() {
 
         {/* VIEW MODE: DENAH MEJA (FLOOR PLAN) */}
         {viewMode === 'tables' ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
-            {tables.map(table => {
-              const activeOrder = orders.find(
-                o => o.table_number === table.table_number && o.order_status !== 'completed' && o.order_status !== 'cancelled'
-              );
-              const isOccupied = Boolean(activeOrder);
-              const isPaid = activeOrder?.payment_status === 'paid';
-              const isWaitingQris = activeOrder?.payment_status === 'waiting_confirmation';
+          <div>
+            {/* Legend Floor Plan */}
+            <div className="flex flex-wrap items-center gap-2 mb-3 text-[11px] font-semibold text-neutral-600">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-neutral-200 rounded-lg">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span>Kosong & Siap</span>
+              </span>
+              <span className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-neutral-200 rounded-lg">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                <span>Terisi (Belum Bayar)</span>
+              </span>
+              <span className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-neutral-200 rounded-lg">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                <span>Lunas / Sedang Makan</span>
+              </span>
+              <span className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-neutral-200 rounded-lg">
+                <span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                <span>Perlu Dibersihkan ({dirtyTables.length})</span>
+              </span>
+              {waiterCalls.length > 0 && (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 border border-amber-300 text-amber-900 rounded-lg animate-pulse font-bold">
+                  <Bell className="w-3 h-3 text-amber-600" />
+                  <span>Panggilan Meja ({waiterCalls.length})</span>
+                </span>
+              )}
+            </div>
 
-              return (
-                <div
-                  key={table.table_number}
-                  className={`rounded-2xl border p-4 flex flex-col justify-between transition min-h-[175px] ${
-                    !isOccupied
-                      ? 'bg-white border-neutral-200 hover:border-neutral-300'
-                      : isPaid
-                      ? 'bg-blue-50/50 border-blue-200'
-                      : isWaitingQris
-                      ? 'bg-amber-50/80 border-amber-300 ring-1 ring-amber-300'
-                      : 'bg-amber-50/40 border-amber-200'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
-                      <span className="font-bold text-sm text-neutral-950">MEJA {table.table_number}</span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        !isOccupied
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : isPaid
-                          ? 'bg-blue-100 text-blue-800'
-                          : isWaitingQris
-                          ? 'bg-amber-200 text-amber-900 animate-pulse'
-                          : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {!isOccupied ? 'KOSONG' : isPaid ? 'LUNAS' : isWaitingQris ? 'VERIFIKASI QRIS' : 'TERISI'}
-                      </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
+              {tables.map(table => {
+                const activeOrder = orders.find(
+                  o => o.table_number === table.table_number && o.order_status !== 'completed' && o.order_status !== 'cancelled'
+                );
+                const tableCalls = waiterCalls.filter(c => c.table_number === table.table_number);
+                const hasCall = tableCalls.length > 0;
+                const isDirty = !activeOrder && dirtyTables.includes(table.table_number);
+                const isOccupied = Boolean(activeOrder);
+                const isPaid = activeOrder?.payment_status === 'paid';
+                const isWaitingQris = activeOrder?.payment_status === 'waiting_confirmation';
+
+                return (
+                  <div
+                    key={table.table_number}
+                    className={`rounded-2xl border p-4 flex flex-col justify-between transition min-h-[185px] shadow-xs ${
+                      hasCall
+                        ? 'bg-amber-50 border-amber-400 ring-2 ring-amber-400 animate-pulse'
+                        : isDirty
+                        ? 'bg-orange-50/70 border-orange-300 ring-1 ring-orange-200'
+                        : !isOccupied
+                        ? 'bg-white border-neutral-200 hover:border-neutral-300'
+                        : isPaid
+                        ? 'bg-blue-50/50 border-blue-200'
+                        : isWaitingQris
+                        ? 'bg-amber-50/80 border-amber-300 ring-1 ring-amber-300'
+                        : 'bg-amber-50/40 border-amber-200'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
+                        <span className="font-bold text-sm text-neutral-950">MEJA {table.table_number}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          hasCall
+                            ? 'bg-amber-300 text-amber-950 font-black animate-bounce'
+                            : isDirty
+                            ? 'bg-orange-100 text-orange-800'
+                            : !isOccupied
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : isPaid
+                            ? 'bg-blue-100 text-blue-800'
+                            : isWaitingQris
+                            ? 'bg-amber-200 text-amber-900 animate-pulse'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {hasCall 
+                            ? '🛎️ PANGGILAN' 
+                            : isDirty 
+                            ? '🧹 DIBERSIHKAN' 
+                            : !isOccupied 
+                            ? 'KOSONG' 
+                            : isPaid 
+                            ? 'LUNAS' 
+                            : isWaitingQris 
+                            ? 'VERIFIKASI QRIS' 
+                            : 'TERISI'}
+                        </span>
+                      </div>
+
+                      {/* Active Waiter Call in Tile */}
+                      {hasCall && (
+                        <div className="py-1.5 space-y-1">
+                          {tableCalls.map(c => (
+                            <div key={c.id} className="text-[11px] font-bold text-amber-950 flex items-center justify-between bg-amber-200/70 p-1.5 rounded-lg border border-amber-300">
+                              <span className="truncate">{c.call_type}</span>
+                              <button
+                                onClick={() => handleResolveCall(c.id)}
+                                className="text-[10px] bg-amber-700 hover:bg-amber-800 text-white px-1.5 py-0.5 rounded shrink-0 ml-1"
+                              >
+                                Selesai
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {isOccupied && activeOrder ? (
+                        <div className="py-2 space-y-1 text-xs">
+                          <p className="font-semibold text-neutral-900 truncate">{activeOrder.customer_name}</p>
+                          <p className="text-[11px] text-neutral-500 font-mono">#{activeOrder.order_number.slice(-3)}</p>
+                          <p className="text-xs font-bold text-neutral-950 mt-1">{formatRupiah(activeOrder.total_amount)}</p>
+                        </div>
+                      ) : isDirty ? (
+                        <div className="py-3 text-center text-xs text-orange-900 space-y-0.5">
+                          <p className="font-bold flex items-center justify-center gap-1">
+                            <span>Piring Kotor</span>
+                          </p>
+                          <p className="text-[10px] text-orange-700">Tamu sudah selesai. Meja belum dibersihkan.</p>
+                        </div>
+                      ) : (
+                        <div className="py-5 text-center text-xs text-neutral-400">
+                          Meja bersih & siap
+                        </div>
+                      )}
                     </div>
 
-                    {isOccupied && activeOrder ? (
-                      <div className="py-2.5 space-y-1 text-xs">
-                        <p className="font-semibold text-neutral-900 truncate">{activeOrder.customer_name}</p>
-                        <p className="text-[11px] text-neutral-500 font-mono">#{activeOrder.order_number.slice(-3)}</p>
-                        <p className="text-xs font-bold text-neutral-950 mt-1">{formatRupiah(activeOrder.total_amount)}</p>
-                      </div>
-                    ) : (
-                      <div className="py-6 text-center text-xs text-neutral-400">
-                        Siap ditempati
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="pt-2 border-t border-neutral-100">
-                    {isOccupied && activeOrder ? (
-                      <div className="flex gap-1.5">
-                        {activeOrder.payment_status === 'waiting_confirmation' ? (
+                    <div className="pt-2 border-t border-neutral-100">
+                      {isOccupied && activeOrder ? (
+                        <div className="flex gap-1.5">
+                          {activeOrder.payment_status === 'waiting_confirmation' ? (
+                            <button
+                              onClick={async () => {
+                                await handleUpdateStatus(activeOrder.id, {
+                                  payment_status: 'paid',
+                                  payment_method: 'QRIS',
+                                  cashier_name: activeCashier ? activeCashier.name : 'Kasir'
+                                });
+                              }}
+                              className="grow bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-lg text-xs"
+                            >
+                              Terima QRIS
+                            </button>
+                          ) : activeOrder.payment_status === 'unpaid' ? (
+                            <button
+                              onClick={() => {
+                                setOrderToPay(activeOrder);
+                                setCashGiven(activeOrder.total_amount);
+                              }}
+                              className="grow bg-neutral-950 hover:bg-neutral-900 text-white font-semibold py-1.5 rounded-lg text-xs"
+                            >
+                              Bayar
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleCloseOrder(activeOrder)}
+                              className="grow bg-neutral-900 hover:bg-neutral-800 text-white font-semibold py-1.5 rounded-lg text-xs"
+                            >
+                              Tutup Meja
+                            </button>
+                          )}
                           <button
-                            onClick={async () => {
-                              await handleUpdateStatus(activeOrder.id, {
-                                payment_status: 'paid',
-                                payment_method: 'QRIS',
-                                cashier_name: activeCashier ? activeCashier.name : 'Kasir'
-                              });
-                            }}
-                            className="grow bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-lg text-xs"
+                            onClick={() => setSelectedOrderForReceipt(activeOrder)}
+                            className="px-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-xs flex items-center justify-center transition"
+                            title="Cetak Struk"
                           >
-                            Terima QRIS
+                            <Printer className="w-3.5 h-3.5" />
                           </button>
-                        ) : activeOrder.payment_status === 'unpaid' ? (
-                          <button
-                            onClick={() => {
-                              setOrderToPay(activeOrder);
-                              setCashGiven(activeOrder.total_amount);
-                            }}
-                            className="grow bg-neutral-950 hover:bg-neutral-900 text-white font-semibold py-1.5 rounded-lg text-xs"
-                          >
-                            Bayar
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleUpdateStatus(activeOrder.id, { order_status: 'completed' })}
-                            className="grow bg-neutral-900 hover:bg-neutral-800 text-white font-semibold py-1.5 rounded-lg text-xs"
-                          >
-                            Tutup Meja
-                          </button>
-                        )}
+                        </div>
+                      ) : isDirty ? (
                         <button
-                          onClick={() => setSelectedOrderForReceipt(activeOrder)}
-                          className="px-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-lg text-xs flex items-center justify-center transition"
-                          title="Cetak Struk"
+                          onClick={() => markTableClean(table.table_number)}
+                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-lg text-xs flex items-center justify-center gap-1.5 transition shadow-xs active:scale-95"
                         >
-                          <Printer className="w-3.5 h-3.5" />
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Tandai Bersih</span>
                         </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setPosTableNumber(table.table_number);
-                          setPosOrderType('dine_in');
-                          setIsPosModalOpen(true);
-                        }}
-                        className="w-full bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-semibold py-1.5 rounded-lg text-xs transition"
-                      >
-                        + Buka Meja
-                      </button>
-                    )}
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setPosTableNumber(table.table_number);
+                            setPosOrderType('dine_in');
+                            setIsPosModalOpen(true);
+                          }}
+                          className="w-full bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-semibold py-1.5 rounded-lg text-xs transition"
+                        >
+                          + Buka Meja
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         ) : (
           /* VIEW MODE: DAFTAR KARTU PESANAN */
@@ -890,7 +1005,7 @@ export default function CashierPage() {
                       /* Sudah LUNAS */
                       <button
                         disabled={isCompleted}
-                        onClick={() => handleUpdateStatus(order.id, { order_status: 'completed' })}
+                        onClick={() => handleCloseOrder(order)}
                         className={`font-semibold py-2 rounded-lg text-xs transition ${
                           isCompleted
                             ? 'bg-neutral-100 text-neutral-400 cursor-default'
