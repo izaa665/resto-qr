@@ -13,19 +13,20 @@ import {
   Check, 
   Clock, 
   MapPin, 
-  QrCode,
-  ShieldCheck,
-  CheckCircle2,
-  Copy,
-  RefreshCw,
-  AlertTriangle,
-  Timer,
-  Bell,
-  Wifi,
-  ChevronRight,
-  ArrowLeftRight
+  QrCode, 
+  ShieldCheck, 
+  CheckCircle2, 
+  Copy, 
+  RefreshCw, 
+  AlertTriangle, 
+  Bell, 
+  Wifi, 
+  ChevronRight, 
+  Sparkles,
+  UtensilsCrossed,
+  Flame,
+  Coffee
 } from 'lucide-react';
-import QRCode from 'qrcode';
 import { Category, MenuItem, OrderItem, RestaurantTable, Order, RestaurantSetting } from '@/types/database';
 import { 
   fetchCategories, 
@@ -33,12 +34,10 @@ import {
   fetchTables, 
   createOrder, 
   fetchOrders, 
-  updateOrderStatus,
-  fetchSetting,
+  fetchSetting, 
   createWaiterCall,
-  updateOrderTable,
-  supabase,
-  isSupabaseConfigured
+  supabase, 
+  isSupabaseConfigured 
 } from '@/lib/supabase';
 import { formatRupiah } from '@/lib/utils';
 
@@ -66,95 +65,14 @@ function CustomerOrderContent() {
   const [callSuccessNotice, setCallSuccessNotice] = useState('');
   
   // Form Info
-  const [customerName, setCustomerName] = useState('Ani');
+  const [customerName, setCustomerName] = useState('Tamu Meja');
   const [paymentMethod, setPaymentMethod] = useState<'Tunai' | 'QRIS' | 'Transfer Bank'>('QRIS');
   const [orderNotes, setOrderNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Active Tracking Order & Dynamic Timed QRIS Modal
+  // Active Tracking Order
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
-  const [isQrisModalOpen, setIsQrisModalOpen] = useState(false);
-  const [qrisDataUrl, setQrisDataUrl] = useState<string>('');
-  const [qrisTimeLeft, setQrisTimeLeft] = useState<number>(300); // 300 detik = 5 menit
-  const [isQrisExpired, setIsQrisExpired] = useState<boolean>(false);
-  const [qrisVersion, setQrisVersion] = useState<number>(1);
-
-  // Customer Table Transfer states
-  const [isCustomerTransferModalOpen, setIsCustomerTransferModalOpen] = useState(false);
-  const [isTransferringTable, setIsTransferringTable] = useState(false);
-  const [transferNotice, setTransferNotice] = useState('');
-  const [showScanMismatchPrompt, setShowScanMismatchPrompt] = useState(false);
-
-  // Check if scanned table is different from active order table
-  useEffect(() => {
-    if (activeOrder && activeOrder.table_number && initialTableParam && activeOrder.table_number !== initialTableParam) {
-      setShowScanMismatchPrompt(true);
-    } else {
-      setShowScanMismatchPrompt(false);
-    }
-  }, [activeOrder?.table_number, initialTableParam]);
-
-  const handleCustomerTransferTable = async (newTableNum: number) => {
-    if (!activeOrder) return;
-    const oldTable = activeOrder.table_number || tableNumber;
-    setIsTransferringTable(true);
-    await updateOrderTable(activeOrder.id, newTableNum);
-    await createWaiterCall(newTableNum, `Pindah Meja (dari Meja ${oldTable})`, customerName);
-    setTableNumber(newTableNum);
-    setActiveOrder(prev => (prev ? { ...prev, table_number: newTableNum } : null));
-    setIsTransferringTable(false);
-    setIsCustomerTransferModalOpen(false);
-    setShowScanMismatchPrompt(false);
-    setTransferNotice(`Berhasil pindah ke Meja ${newTableNum}! Dapur dan Kasir telah diperbarui.`);
-    setTimeout(() => setTransferNotice(''), 4000);
-  };
-
-  // QRIS Countdown Timer
-  useEffect(() => {
-    if (!isQrisModalOpen || isQrisExpired) return;
-
-    const interval = setInterval(() => {
-      setQrisTimeLeft(prev => {
-        if (prev <= 1) {
-          setIsQrisExpired(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isQrisModalOpen, isQrisExpired]);
-
-  const handleRegenerateQris = () => {
-    setQrisTimeLeft(300);
-    setIsQrisExpired(false);
-    setQrisVersion(prev => prev + 1);
-  };
-
-  const handleOpenQrisModal = () => {
-    if (isQrisExpired || qrisTimeLeft <= 0) {
-      handleRegenerateQris();
-    }
-    setIsQrisModalOpen(true);
-  };
-
-  const formatTimer = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
-
-  const handleSendWaiterCall = async (callType: string) => {
-    setIsSendingCall(true);
-    await createWaiterCall(tableNumber, callType, customerName);
-    setIsSendingCall(false);
-    setCallSuccessNotice(`Pelayan telah diberitahu untuk Meja ${tableNumber}!`);
-    setTimeout(() => {
-      setCallSuccessNotice('');
-      setIsCallWaiterOpen(false);
-    }, 2000);
-  };
+  const [wifiCopied, setWifiCopied] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -189,13 +107,13 @@ function CustomerOrderContent() {
     } catch (e) {}
   }, []);
 
-  // Supabase Realtime & Polling for activeOrder
+  // Realtime active order status listener
   useEffect(() => {
     if (!activeOrder) return;
 
     if (isSupabaseConfigured && supabase) {
       const channel = supabase
-        .channel(`order-track-${activeOrder.id}`)
+        .channel(`order-track-home-${activeOrder.id}`)
         .on(
           'postgres_changes',
           {
@@ -212,55 +130,22 @@ function CustomerOrderContent() {
         )
         .subscribe();
 
-      const pollInterval = setInterval(async () => {
-        const all = await fetchOrders();
-        const updated = all.find(o => o.id === activeOrder.id || o.order_number === activeOrder.order_number);
-        if (updated) {
-          setActiveOrder(updated);
-        }
-      }, 4000);
-
       return () => {
         supabase.removeChannel(channel);
-        clearInterval(pollInterval);
       };
-    } else {
-      const interval = setInterval(async () => {
-        const all = await fetchOrders();
-        const updated = all.find(o => o.id === activeOrder.id || o.order_number === activeOrder.order_number);
-        if (updated) {
-          setActiveOrder(updated);
-        }
-      }, 2500);
-      return () => clearInterval(interval);
     }
   }, [activeOrder?.id]);
 
-  // Generate QRIS Data URL when activeOrder or QRIS opens (dynamic per version)
-  useEffect(() => {
-    if (!activeOrder) return;
-    const dynamicSalt = `${Date.now().toString().slice(-4)}${qrisVersion}`;
-    const qrisPayload = `00020101021226670014ID.GO.QRIS.WWW01189360052300000000000215ID1020261118001520458125303360540${activeOrder.total_amount}5802ID5913RASA NUSANTARA6007JAKARTA62070703A016304${activeOrder.order_number}-${dynamicSalt}`;
-    
-    QRCode.toDataURL(qrisPayload, {
-      width: 280,
-      margin: 1,
-      color: {
-        dark: '#0a0a0a',
-        light: '#ffffff',
-      },
-    }).then(url => {
-      setQrisDataUrl(url);
-    }).catch(err => console.error(err));
-  }, [activeOrder, qrisVersion]);
-
-  const totalCartQty = cart.reduce((sum, item) => sum + item.qty, 0);
-  const subtotalCartPrice = cart.reduce((sum, item) => sum + item.subtotal, 0);
-  const taxPercent = setting?.tax_percent ?? 10;
-  const servicePercent = setting?.service_percent ?? 0;
-  const taxAmount = Math.round((subtotalCartPrice * taxPercent) / 100);
-  const serviceAmount = Math.round((subtotalCartPrice * servicePercent) / 100);
-  const totalCartPrice = subtotalCartPrice + taxAmount + serviceAmount;
+  const handleSendWaiterCall = async (callType: string) => {
+    setIsSendingCall(true);
+    await createWaiterCall(tableNumber, callType, customerName);
+    setIsSendingCall(false);
+    setCallSuccessNotice(`Pelayan telah diberitahu untuk Meja ${tableNumber}!`);
+    setTimeout(() => {
+      setCallSuccessNotice('');
+      setIsCallWaiterOpen(false);
+    }, 2000);
+  };
 
   const addToCart = (menu: MenuItem) => {
     setCart(prev => {
@@ -307,6 +192,14 @@ function CustomerOrderContent() {
     );
   };
 
+  const subtotalCartPrice = cart.reduce((sum, item) => sum + item.subtotal, 0);
+  const totalCartQty = cart.reduce((sum, item) => sum + item.qty, 0);
+  const taxPercent = setting?.tax_percent || 10;
+  const taxAmount = Math.round(subtotalCartPrice * (taxPercent / 100));
+  const servicePercent = setting?.service_percent || 0;
+  const serviceAmount = Math.round(subtotalCartPrice * (servicePercent / 100));
+  const totalCartPrice = subtotalCartPrice + taxAmount + serviceAmount;
+
   const handleSubmitOrder = async () => {
     if (!customerName.trim()) {
       alert('Silakan isi nama pemesan');
@@ -337,7 +230,7 @@ function CustomerOrderContent() {
         setCart([]);
         setIsCartOpen(false);
 
-        // Masuk langsung ke halaman status pesanan baru
+        // Masuk langsung ke halaman status pesanan baru!
         router.push(`/status?id=${result.order.id}&meja=${tableNumber}`);
       } else {
         alert(result.error || 'Gagal mengirim pesanan');
@@ -350,16 +243,6 @@ function CustomerOrderContent() {
     }
   };
 
-  const handleConfirmQrisPaid = async () => {
-    if (!activeOrder) return;
-    await updateOrderStatus(activeOrder.id, { 
-      payment_status: 'waiting_confirmation', 
-      changed_by: 'Pelanggan QRIS' 
-    });
-    setActiveOrder(prev => prev ? { ...prev, payment_status: 'waiting_confirmation' } : null);
-    setIsQrisModalOpen(false);
-  };
-
   const filteredMenus = menus.filter(m => {
     if (!m.is_available) return false;
     const matchCat = activeCategory === 'all' || m.category_id === activeCategory;
@@ -370,47 +253,44 @@ function CustomerOrderContent() {
   });
 
   return (
-    <div className="bg-neutral-50 min-h-screen text-neutral-900 pb-28 selection:bg-neutral-900 selection:text-white">
+    <div className="bg-[#FAF8F5] min-h-screen text-[#1A1816] pb-28 selection:bg-stone-900 selection:text-amber-300">
       
-      {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-white border-b border-neutral-200 px-4 py-3">
+      {/* Top Navbar */}
+      <header className="sticky top-0 z-30 glass-panel border-b border-stone-200/80 px-4 py-3 shadow-warm-sm">
         <div className="max-w-md mx-auto flex items-center justify-between">
-          <div>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-400 block">
-              Dine-In Menu
-            </span>
-            <h1 className="text-base font-bold tracking-tight text-neutral-950 truncate max-w-[150px]">
-              {setting?.name || 'Rasa Nusantara'}
-            </h1>
+          
+          {/* Brand Identity */}
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-xl bg-stone-900 text-amber-400 flex items-center justify-center font-black text-sm shadow-warm-sm">
+              <UtensilsCrossed className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-[9px] uppercase font-bold tracking-widest text-amber-700 block">
+                Artisan Kitchen & Brews
+              </span>
+              <h1 className="text-sm font-black tracking-tight text-stone-950 truncate max-w-[140px]">
+                {setting?.name || 'Rasa Nusantara'}
+              </h1>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-1.5">
-            {activeOrder && activeOrder.order_status !== 'completed' && activeOrder.order_status !== 'cancelled' && (
-              <Link
-                href={`/status?id=${activeOrder.id}&meja=${activeOrder.table_number || tableNumber}`}
-                className="flex items-center space-x-1 bg-amber-500 hover:bg-amber-400 text-neutral-950 px-2 py-1.5 rounded-lg text-xs font-bold transition shadow-xs animate-pulse"
-                title="Lihat status pesanan Anda"
-              >
-                <Clock className="w-3.5 h-3.5" />
-                <span className="hidden xs:inline">Status Pesanan</span>
-                <span className="xs:hidden">Status</span>
-              </Link>
-            )}
-
+          {/* Quick Action Badges */}
+          <div className="flex items-center space-x-2">
             <button
               onClick={() => setIsCallWaiterOpen(true)}
-              className="flex items-center space-x-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 border border-amber-500/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
-              title="Panggil pelayan ke meja Anda"
+              className="flex items-center space-x-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 border border-amber-500/30 px-2.5 py-1.5 rounded-full text-xs font-bold transition shadow-2xs active:scale-95"
+              title="Panggil pelayan ke meja"
             >
-              <Bell className="w-3.5 h-3.5" />
+              <Bell className="w-3.5 h-3.5 text-amber-600" />
               <span>Panggil</span>
             </button>
 
+            {/* Table Badge */}
             <button
               onClick={() => setIsTableModalOpen(true)}
-              className="flex items-center space-x-1.5 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 text-neutral-900 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition"
+              className="flex items-center space-x-1.5 bg-stone-900 text-amber-300 hover:bg-stone-800 px-3 py-1.5 rounded-full text-xs font-black transition shadow-warm-sm active:scale-95 ring-2 ring-stone-900/10"
             >
-              <MapPin className="w-3.5 h-3.5 text-neutral-500" />
+              <MapPin className="w-3.5 h-3.5 text-amber-400" />
               <span>Meja {tableNumber}</span>
             </button>
           </div>
@@ -418,72 +298,77 @@ function CustomerOrderContent() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-md mx-auto px-4 pt-4">
+      <main className="max-w-md mx-auto px-4 pt-4 space-y-4">
 
-        {/* Floating Active Order Status Bar (Discreet, Clean, Click to open Status Page) */}
-        {activeOrder && activeOrder.order_status !== 'completed' && activeOrder.order_status !== 'cancelled' && (
-          <div className="fixed bottom-20 left-4 right-4 z-40 max-w-md mx-auto">
-            <Link
-              href={`/status?id=${activeOrder.id}&meja=${activeOrder.table_number || tableNumber}`}
-              className="bg-neutral-950 text-white p-3 rounded-2xl shadow-2xl flex items-center justify-between border border-neutral-800 hover:bg-neutral-900 transition group"
-            >
-              <div className="flex items-center space-x-2.5 overflow-hidden">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
-                  <Clock className="w-4 h-4" />
-                </div>
-                <div className="overflow-hidden text-xs">
-                  <p className="font-bold text-white truncate flex items-center gap-1.5">
-                    <span>Meja {activeOrder.table_number || tableNumber}</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    <span className="text-[11px] text-emerald-400 font-semibold">
-                      {activeOrder.order_status === 'pending' ? 'Pesanan Diterima' : activeOrder.order_status === 'processing' ? 'Sedang Dimasak' : 'Siap Saji'}
-                    </span>
-                  </p>
-                  <p className="text-[10px] text-neutral-400 truncate">
-                    #{activeOrder.order_number} • Sentuh untuk lihat detail & QRIS
-                  </p>
-                </div>
+        {/* Ambient Greeting & Wi-Fi Banner */}
+        <div className="bg-gradient-to-br from-stone-900 to-stone-800 text-white p-4 sm:p-5 rounded-2xl shadow-warm-md relative overflow-hidden">
+          <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-32 h-32 rounded-full bg-amber-500/10 blur-2xl"></div>
+          
+          <div className="relative z-10 space-y-2">
+            <div className="flex items-center space-x-1.5 text-amber-400 text-[11px] font-bold uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Pemesanan Digital Meja {tableNumber}</span>
+            </div>
+            
+            <h2 className="text-base sm:text-lg font-black tracking-tight text-white leading-snug">
+              Cita Rasa Otentik, Disajikan Langsung ke Meja Anda.
+            </h2>
+            
+            <p className="text-xs text-stone-300 leading-relaxed">
+              Pilih menu favorit Anda di bawah. Pesanan akan otomatis terkirim dan disiapkan segar oleh koki dapur.
+            </p>
+
+            {setting?.wifi_password && (
+              <div className="pt-1">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(setting.wifi_password || '');
+                    setWifiCopied(true);
+                    setTimeout(() => setWifiCopied(false), 2000);
+                  }}
+                  className="inline-flex items-center space-x-2 bg-stone-800/80 border border-stone-700/80 hover:bg-stone-700 text-stone-200 px-3 py-1.5 rounded-full text-[11px] font-medium transition"
+                >
+                  <Wifi className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Wi-Fi: <strong className="text-white font-mono">{setting.wifi_password}</strong></span>
+                  <span className="text-[10px] text-amber-400 font-bold ml-1">{wifiCopied ? '✓ Tersalin' : '(Salin)'}</span>
+                </button>
               </div>
-              <div className="flex items-center space-x-1 text-amber-400 text-xs font-bold shrink-0 pl-2">
-                <span>Detail</span>
-                <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition" />
-              </div>
-            </Link>
+            )}
           </div>
-        )}
+        </div>
 
-        {/* Search */}
-        <div className="relative mb-3">
-          <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Cari menu makanan atau minuman..."
+            placeholder="Cari menu, kopi, atau camilan lezat..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white border border-neutral-200 rounded-xl pl-9 pr-4 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:outline-hidden focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 transition"
+            className="w-full bg-white border border-stone-200/90 rounded-2xl pl-10 pr-4 py-3 text-xs text-stone-900 placeholder:text-stone-400 focus:outline-hidden focus:border-stone-900 focus:ring-1 focus:ring-stone-900 shadow-warm-sm transition"
           />
         </div>
 
-        {/* Category Pills */}
-        <div className="flex space-x-1.5 overflow-x-auto no-scrollbar pb-3 mb-3 -mx-4 px-4">
+        {/* Category Navigation Pills */}
+        <div className="flex space-x-2 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4">
           <button
             onClick={() => setActiveCategory('all')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition border ${
+            className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition shadow-2xs ${
               activeCategory === 'all'
-                ? 'bg-neutral-950 text-white border-neutral-950'
-                : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'
+                ? 'bg-stone-900 text-white shadow-warm-sm ring-2 ring-stone-900/10'
+                : 'bg-white text-stone-600 hover:bg-stone-100 border border-stone-200/80'
             }`}
           >
-            Semua
+            Semua Menu
           </button>
           {categories.map(cat => (
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition border ${
+              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition shadow-2xs ${
                 activeCategory === cat.id
-                  ? 'bg-neutral-950 text-white border-neutral-950'
-                  : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'
+                  ? 'bg-stone-900 text-white shadow-warm-sm ring-2 ring-stone-900/10'
+                  : 'bg-white text-stone-600 hover:bg-stone-100 border border-stone-200/80'
               }`}
             >
               {cat.name}
@@ -491,43 +376,61 @@ function CustomerOrderContent() {
           ))}
         </div>
 
-        {/* Menu Items */}
-        <div className="space-y-2.5">
+        {/* Menu Items Grid */}
+        <div className="space-y-3 pt-1">
           {filteredMenus.map(menu => {
             const inCart = cart.find(c => c.menu_id === menu.id);
             return (
               <div
                 key={menu.id}
-                className="bg-white rounded-xl p-3 border border-neutral-200 flex gap-3 items-center justify-between transition hover:border-neutral-300"
+                className="bg-white rounded-2xl p-3.5 border border-stone-200/80 shadow-warm-sm hover:shadow-warm-md flex gap-3.5 items-center justify-between transition-all"
               >
-                <div className="flex items-center space-x-3 grow min-w-0">
-                  <img
-                    src={menu.image}
-                    alt={menu.name}
-                    className="w-16 h-16 rounded-lg object-cover shrink-0 bg-neutral-100"
-                  />
-                  <div className="min-w-0 grow pr-2">
-                    <h3 className="font-semibold text-xs text-neutral-950 truncate">{menu.name}</h3>
-                    <p className="text-[11px] text-neutral-500 line-clamp-1 mt-0.5">{menu.description}</p>
-                    <p className="text-xs font-bold text-neutral-900 mt-1">{formatRupiah(menu.price)}</p>
+                {/* Photo & Description */}
+                <div className="flex items-center space-x-3.5 grow min-w-0">
+                  <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-stone-100 shadow-inner">
+                    <img
+                      src={menu.image}
+                      alt={menu.name}
+                      className="w-full h-full object-cover transition duration-300 hover:scale-105"
+                      loading="lazy"
+                    />
+                    {menu.price > 25000 && (
+                      <span className="absolute top-1 left-1 bg-stone-900/85 backdrop-blur-xs text-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                        <Flame className="w-2.5 h-2.5 text-amber-400" />
+                        Chef's Pick
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="min-w-0 grow pr-1">
+                    <h3 className="font-bold text-xs sm:text-sm text-stone-900 tracking-tight leading-tight">
+                      {menu.name}
+                    </h3>
+                    <p className="text-[11px] text-stone-500 line-clamp-2 mt-1 leading-relaxed">
+                      {menu.description}
+                    </p>
+                    <p className="text-xs sm:text-sm font-black text-amber-800 font-mono mt-1.5">
+                      {formatRupiah(menu.price)}
+                    </p>
                   </div>
                 </div>
 
-                <div className="shrink-0">
+                {/* Stepper / Add Button */}
+                <div className="shrink-0 pl-1">
                   {inCart ? (
-                    <div className="flex items-center space-x-1.5 bg-neutral-100 rounded-lg p-1 border border-neutral-200">
+                    <div className="flex items-center space-x-2 bg-stone-900 text-white rounded-full p-1 shadow-warm-sm">
                       <button
                         onClick={() => updateItemQty(menu.id, -1)}
-                        className="w-6 h-6 rounded bg-white text-neutral-700 flex items-center justify-center font-bold text-xs hover:bg-neutral-200"
+                        className="w-6 h-6 rounded-full bg-stone-800 hover:bg-stone-700 text-white flex items-center justify-center font-bold text-xs transition active:scale-90"
                       >
                         <Minus className="w-3 h-3" />
                       </button>
-                      <span className="w-4 text-center text-xs font-bold text-neutral-900">
+                      <span className="w-4 text-center text-xs font-black text-amber-300 font-mono">
                         {inCart.qty}
                       </span>
                       <button
                         onClick={() => updateItemQty(menu.id, 1)}
-                        className="w-6 h-6 rounded bg-white text-neutral-700 flex items-center justify-center font-bold text-xs hover:bg-neutral-200"
+                        className="w-6 h-6 rounded-full bg-stone-800 hover:bg-stone-700 text-white flex items-center justify-center font-bold text-xs transition active:scale-90"
                       >
                         <Plus className="w-3 h-3" />
                       </button>
@@ -535,10 +438,10 @@ function CustomerOrderContent() {
                   ) : (
                     <button
                       onClick={() => addToCart(menu)}
-                      className="bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center space-x-1 transition"
+                      className="bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold px-3.5 py-2 rounded-full flex items-center space-x-1.5 transition shadow-warm-sm active:scale-95"
                     >
-                      <Plus className="w-3 h-3" />
-                      <span>Tambah</span>
+                      <Plus className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Pesan</span>
                     </button>
                   )}
                 </div>
@@ -547,328 +450,213 @@ function CustomerOrderContent() {
           })}
         </div>
 
-        {/* Restaurant Footer Info */}
-        <div className="mt-10 text-center text-[11px] text-neutral-400 border-t border-neutral-200 pt-6 pb-2 space-y-1">
-          <p className="font-semibold text-neutral-700">{setting?.name || 'Rasa Nusantara Resto & Cafe'}</p>
-          <p className="text-neutral-500">{setting?.address || 'Jl. Kuliner Lezat No. 88, Jakarta'}</p>
-          {setting?.wifi_password && (
-            <div className="inline-flex items-center gap-1.5 bg-neutral-100 border border-neutral-200 px-2.5 py-1 rounded-full text-[10px] text-neutral-600 font-mono mt-1">
-              <Wifi className="w-3 h-3 text-neutral-500" />
-              <span>WiFi: <strong>{setting.wifi_password}</strong></span>
-            </div>
-          )}
-          <p className="text-[10px] text-neutral-400 mt-1">Pesanan Anda akan disajikan langsung ke Meja {tableNumber}</p>
+        {/* Footer Brand Info */}
+        <div className="mt-8 text-center text-[11px] text-stone-500 border-t border-stone-200/80 pt-6 pb-2 space-y-1">
+          <p className="font-bold text-stone-800">{setting?.name || 'Rasa Nusantara Resto & Cafe'}</p>
+          <p className="text-stone-500 text-[10px]">{setting?.address || 'Jl. Kuliner Lezat No. 88, Jakarta'}</p>
+          <p className="text-[10px] text-stone-400 mt-1">Pesanan Anda dimasak langsung dan disajikan ke Meja {tableNumber}</p>
         </div>
 
       </main>
 
+      {/* Floating Active Order Status Bar */}
+      {activeOrder && activeOrder.order_status !== 'completed' && activeOrder.order_status !== 'cancelled' && (
+        <div className="fixed bottom-20 left-4 right-4 z-40 max-w-md mx-auto animate-in slide-in-from-bottom-3">
+          <Link
+            href={`/status?id=${activeOrder.id}&meja=${activeOrder.table_number || tableNumber}`}
+            className="bg-stone-950/95 backdrop-blur-md text-white p-3.5 rounded-2xl shadow-warm-xl flex items-center justify-between border border-stone-800 hover:bg-stone-900 transition group"
+          >
+            <div className="flex items-center space-x-3 overflow-hidden">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+                <Clock className="w-4 h-4 animate-spin-slow" />
+              </div>
+              <div className="overflow-hidden text-xs">
+                <p className="font-bold text-white truncate flex items-center gap-1.5">
+                  <span>Meja {activeOrder.table_number || tableNumber}</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="text-[11px] text-emerald-400 font-bold">
+                    {activeOrder.order_status === 'pending' ? 'Pesanan Diterima' : activeOrder.order_status === 'processing' ? 'Sedang Dimasak' : 'Siap Saji'}
+                  </span>
+                </p>
+                <p className="text-[10px] text-stone-400 truncate">
+                  #{activeOrder.order_number} • Sentuh untuk lihat status & bayar QRIS
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-1 text-amber-400 text-xs font-bold shrink-0 pl-2">
+              <span>Buka</span>
+              <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition" />
+            </div>
+          </Link>
+        </div>
+      )}
+
       {/* Floating Bottom Cart Bar */}
       {totalCartQty > 0 && (
-        <div className="fixed bottom-3 inset-x-0 max-w-md mx-auto px-4 z-40">
+        <div className="fixed bottom-4 inset-x-0 max-w-md mx-auto px-4 z-40 animate-in slide-in-from-bottom-2">
           <button
             onClick={() => setIsCartOpen(true)}
-            className="w-full bg-neutral-950 text-white p-3.5 rounded-xl shadow-lg flex items-center justify-between hover:bg-neutral-900 transition"
+            className="w-full bg-stone-950 text-white p-3.5 rounded-2xl shadow-warm-xl flex items-center justify-between hover:bg-stone-900 transition active:scale-98 border border-stone-800"
           >
-            <div className="flex items-center space-x-2.5">
-              <span className="w-6 h-6 rounded-md bg-neutral-800 text-xs font-bold flex items-center justify-center">
+            <div className="flex items-center space-x-3">
+              <span className="w-7 h-7 rounded-xl bg-amber-500 text-stone-950 text-xs font-black flex items-center justify-center font-mono">
                 {totalCartQty}
               </span>
-              <span className="text-xs font-semibold">Lihat Pesanan</span>
+              <span className="text-xs font-bold tracking-tight">Lihat Keranjang Pesanan</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-xs font-bold">{formatRupiah(totalCartPrice)}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <span className="text-xs font-black text-amber-300 font-mono">{formatRupiah(totalCartPrice)}</span>
+              <ArrowRight className="w-4 h-4 text-amber-400" />
             </div>
           </button>
         </div>
       )}
 
-      {/* Cart Drawer */}
+      {/* Cart Drawer Bottom Sheet */}
       {isCartOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end justify-center">
-          <div className="w-full max-w-md bg-white rounded-t-2xl max-h-[85vh] flex flex-col shadow-xl">
-            <div className="px-4 py-3.5 border-b border-neutral-200 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end justify-center animate-in fade-in">
+          <div className="w-full max-w-md bg-white rounded-t-3xl max-h-[88vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom-4 border-t border-stone-200">
+            
+            {/* Sheet Handle & Header */}
+            <div className="pt-2 pb-1 flex justify-center">
+              <div className="w-10 h-1 rounded-full bg-stone-300"></div>
+            </div>
+
+            <div className="px-5 py-3 border-b border-stone-100 flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-neutral-950 text-sm">Pesanan Meja {tableNumber}</h3>
-                <p className="text-[11px] text-neutral-500">{totalCartQty} item dipilih</p>
+                <h3 className="font-black text-stone-950 text-sm">Pesanan Meja {tableNumber}</h3>
+                <p className="text-[11px] text-stone-500">{totalCartQty} hidangan dipilih</p>
               </div>
               <button
                 onClick={() => setIsCartOpen(false)}
-                className="w-7 h-7 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-500 hover:text-neutral-900"
+                className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-500 hover:text-stone-900 transition"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-4 overflow-y-auto grow space-y-3">
+            {/* Cart Items List */}
+            <div className="p-5 overflow-y-auto grow space-y-4">
               {cart.map(item => (
-                <div key={item.menu_id} className="border-b border-neutral-100 pb-3 last:border-b-0 space-y-1.5">
+                <div key={item.menu_id} className="border-b border-stone-100 pb-3 last:border-b-0 space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-xs font-semibold text-neutral-900">{item.menu_name}</h4>
-                      <p className="text-[11px] text-neutral-500">{formatRupiah(item.price)}</p>
+                      <h4 className="text-xs font-bold text-stone-900">{item.menu_name}</h4>
+                      <p className="text-[11px] text-amber-800 font-mono font-semibold">{formatRupiah(item.price)}</p>
                     </div>
-                    <div className="flex items-center space-x-2 bg-neutral-100 rounded-lg p-1 border border-neutral-200">
-                      <button onClick={() => updateItemQty(item.menu_id, -1)} className="w-5 h-5 bg-white rounded flex items-center justify-center text-xs">
+                    <div className="flex items-center space-x-2 bg-stone-100 rounded-full p-1 border border-stone-200">
+                      <button onClick={() => updateItemQty(item.menu_id, -1)} className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs font-bold text-stone-700 shadow-2xs">
                         <Minus className="w-3 h-3" />
                       </button>
-                      <span className="w-4 text-center text-xs font-bold">{item.qty}</span>
-                      <button onClick={() => updateItemQty(item.menu_id, 1)} className="w-5 h-5 bg-white rounded flex items-center justify-center text-xs">
+                      <span className="w-4 text-center text-xs font-black font-mono text-stone-900">{item.qty}</span>
+                      <button onClick={() => updateItemQty(item.menu_id, 1)} className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs font-bold text-stone-700 shadow-2xs">
                         <Plus className="w-3 h-3" />
                       </button>
                     </div>
                   </div>
                   <input
                     type="text"
-                    placeholder="Catatan (misal: pedas sedang, es dipisah...)"
+                    placeholder="Catatan porsi (misal: pedas sedang, es dipisah...)"
                     value={item.item_notes || ''}
                     onChange={e => updateItemNote(item.menu_id, e.target.value)}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-lg px-2.5 py-1 text-xs text-neutral-800 placeholder:text-neutral-400 focus:outline-hidden focus:border-neutral-900"
+                    className="w-full bg-stone-50 border border-stone-200/90 rounded-xl px-3 py-1.5 text-xs text-stone-800 placeholder:text-stone-400 focus:outline-hidden focus:border-stone-900"
                   />
                 </div>
               ))}
 
-              <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-200 space-y-2.5 text-xs">
+              {/* Guest Information */}
+              <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200/80 space-y-2.5 text-xs">
                 <div>
-                  <label className="block text-[11px] font-semibold text-neutral-600 mb-1">Nama Pemesan</label>
+                  <label className="block text-[11px] font-bold text-stone-700 mb-1">Nama Pemesan</label>
                   <input
                     type="text"
                     value={customerName}
                     onChange={e => setCustomerName(e.target.value)}
-                    className="w-full bg-white border border-neutral-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-neutral-900 focus:outline-hidden focus:border-neutral-900"
+                    className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold text-stone-900 focus:outline-hidden focus:border-stone-900"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-neutral-600 mb-1">Catatan Tambahan untuk Dapur</label>
+                  <label className="block text-[11px] font-bold text-stone-700 mb-1">Catatan Tambahan untuk Koki</label>
                   <input
                     type="text"
-                    placeholder="Contoh: Sambal dipisah, tisu lebih"
+                    placeholder="Contoh: Sambal dipisah, minta sendok ekstra"
                     value={orderNotes}
                     onChange={e => setOrderNotes(e.target.value)}
-                    className="w-full bg-white border border-neutral-200 rounded-lg px-3 py-1.5 text-xs text-neutral-900 focus:outline-hidden focus:border-neutral-900"
+                    className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-hidden focus:border-stone-900"
                   />
                 </div>
               </div>
 
+              {/* Payment Method Selector */}
               <div>
-                <label className="block text-[11px] font-semibold text-neutral-600 mb-1.5">Metode Pembayaran</label>
+                <label className="block text-[11px] font-bold text-stone-700 mb-1.5">Metode Pembayaran</label>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('QRIS')}
-                    className={`py-2 px-3 rounded-lg border text-left transition ${
+                    className={`py-2.5 px-3 rounded-2xl border text-left transition ${
                       paymentMethod === 'QRIS'
-                        ? 'border-neutral-900 bg-neutral-900 text-white font-semibold'
-                        : 'border-neutral-200 bg-white text-neutral-700'
+                        ? 'border-stone-900 bg-stone-900 text-white font-bold shadow-warm-sm'
+                        : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300'
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
-                      <QrCode className="w-3.5 h-3.5" />
+                      <QrCode className="w-4 h-4 text-amber-400" />
                       <span>QRIS Instan</span>
                     </div>
-                    <span className="text-[10px] opacity-75 block mt-0.5">Langsung Scan QR</span>
+                    <span className="text-[10px] opacity-80 block mt-0.5">Scan QR langsung dari HP</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('Tunai')}
-                    className={`py-2 px-3 rounded-lg border text-left transition ${
+                    className={`py-2.5 px-3 rounded-2xl border text-left transition ${
                       paymentMethod === 'Tunai'
-                        ? 'border-neutral-900 bg-neutral-900 text-white font-semibold'
-                        : 'border-neutral-200 bg-white text-neutral-700'
+                        ? 'border-stone-900 bg-stone-900 text-white font-bold shadow-warm-sm'
+                        : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300'
                     }`}
                   >
                     <span>Bayar di Kasir</span>
-                    <span className="text-[10px] opacity-75 block mt-0.5">Selesai Makan</span>
+                    <span className="text-[10px] opacity-80 block mt-0.5">Pelunasan di kasir resto</span>
                   </button>
                 </div>
-                {paymentMethod === 'QRIS' && (
-                  <p className="text-[11px] text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200 mt-2 font-medium">
-                    ⚡ Kode QRIS Dinamis berwaktu (5 menit) akan otomatis muncul di layar setelah Anda membuat pesanan.
-                  </p>
-                )}
               </div>
 
-              <div className="pt-2.5 border-t border-neutral-200 space-y-1.5 text-xs">
-                <div className="flex justify-between items-baseline text-neutral-600">
+              {/* Price Breakdown */}
+              <div className="pt-3 border-t border-stone-200 space-y-1.5 text-xs">
+                <div className="flex justify-between items-baseline text-stone-600">
                   <span>Subtotal Menu</span>
-                  <span className="font-semibold text-neutral-900">{formatRupiah(subtotalCartPrice)}</span>
+                  <span className="font-mono font-semibold text-stone-900">{formatRupiah(subtotalCartPrice)}</span>
                 </div>
                 {taxPercent > 0 && (
-                  <div className="flex justify-between items-baseline text-neutral-600">
+                  <div className="flex justify-between items-baseline text-stone-600">
                     <span>Pajak Restoran (PB1 {taxPercent}%)</span>
-                    <span className="font-semibold text-neutral-900">{formatRupiah(taxAmount)}</span>
+                    <span className="font-mono font-semibold text-stone-900">{formatRupiah(taxAmount)}</span>
                   </div>
                 )}
-                {servicePercent > 0 && (
-                  <div className="flex justify-between items-baseline text-neutral-600">
-                    <span>Biaya Layanan ({servicePercent}%)</span>
-                    <span className="font-semibold text-neutral-900">{formatRupiah(serviceAmount)}</span>
+                {serviceAmount > 0 && (
+                  <div className="flex justify-between items-baseline text-stone-600">
+                    <span>Service Charge ({servicePercent}%)</span>
+                    <span className="font-mono font-semibold text-stone-900">{formatRupiah(serviceAmount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-baseline pt-1.5 border-t border-neutral-100">
-                  <span className="font-bold text-neutral-950">Total Pembayaran</span>
-                  <span className="text-sm font-bold text-neutral-950">{formatRupiah(totalCartPrice)}</span>
+                <div className="flex justify-between items-baseline text-sm font-black text-stone-950 pt-2 border-t border-stone-200">
+                  <span>Total Tagihan</span>
+                  <span className="font-mono text-base text-amber-900">{formatRupiah(totalCartPrice)}</span>
                 </div>
               </div>
+
             </div>
 
-            <div className="p-4 border-t border-neutral-200 bg-white">
+            {/* Bottom Submit Button */}
+            <div className="p-4 border-t border-stone-100 bg-stone-50">
               <button
-                disabled={isSubmitting}
+                disabled={isSubmitting || cart.length === 0}
                 onClick={handleSubmitOrder}
-                className="w-full bg-neutral-950 hover:bg-neutral-900 text-white py-3 rounded-xl text-xs font-semibold transition disabled:opacity-50"
+                className="w-full bg-stone-950 hover:bg-stone-900 text-white font-black py-3.5 rounded-2xl text-xs uppercase tracking-wider transition shadow-warm-lg disabled:opacity-50 flex items-center justify-center space-x-2 active:scale-98"
               >
-                {isSubmitting 
-                  ? 'Membuat Pesanan...' 
-                  : paymentMethod === 'QRIS' 
-                  ? 'Buat Pesanan & Bayar QRIS (5 Menit)' 
-                  : 'Kirim Pesanan ke Dapur'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* POP-UP MODAL QRIS PEMBAYARAN BERWAKTU (DYNAMIC TIMED QRIS) */}
-      {isQrisModalOpen && activeOrder && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full shadow-2xl overflow-hidden border border-neutral-200 flex flex-col">
-            
-            {/* Header QRIS Resmi */}
-            <div className="p-4 bg-neutral-950 text-white flex items-center justify-between">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center font-bold text-xs text-white tracking-tighter shadow-sm">
-                  QRIS
-                </div>
-                <div>
-                  <h3 className="font-bold text-xs uppercase tracking-wider text-white">Pembayaran QRIS</h3>
-                  <p className="text-[10px] text-neutral-400">Standar Pembayaran Nasional (NMID: ID1020261118001)</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setIsQrisModalOpen(false)} 
-                className="text-neutral-400 hover:text-white p-1 rounded-lg hover:bg-neutral-800 transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Countdown Timer Header Bar */}
-            <div className={`px-4 py-2.5 border-b text-xs flex items-center justify-between transition ${
-              isQrisExpired 
-                ? 'bg-rose-50 border-rose-200 text-rose-700' 
-                : qrisTimeLeft <= 60 
-                ? 'bg-amber-50 border-amber-200 text-amber-800' 
-                : 'bg-neutral-50 border-neutral-200 text-neutral-700'
-            }`}>
-              <div className="flex items-center gap-1.5 font-semibold">
-                <Clock className={`w-3.5 h-3.5 ${isQrisExpired ? 'text-rose-600 animate-pulse' : 'text-amber-500'}`} />
-                <span>{isQrisExpired ? 'QRIS Kedaluwarsa' : 'Selesaikan Pembayaran:'}</span>
-              </div>
-              <span className={`font-mono text-sm font-black px-2 py-0.5 rounded-md ${
-                isQrisExpired 
-                  ? 'bg-rose-200/60 text-rose-800' 
-                  : qrisTimeLeft <= 60
-                  ? 'bg-amber-200/80 text-amber-900 animate-pulse'
-                  : 'bg-neutral-200 text-neutral-900'
-              }`}>
-                {isQrisExpired ? '00:00' : formatTimer(qrisTimeLeft)}
-              </span>
-            </div>
-
-            {/* Visual Progress Bar Timer */}
-            {!isQrisExpired && (
-              <div className="w-full bg-neutral-100 h-1">
-                <div 
-                  className={`h-1 transition-all duration-1000 ${
-                    qrisTimeLeft <= 60 ? 'bg-rose-500' : 'bg-amber-500'
-                  }`}
-                  style={{ width: `${Math.max(0, Math.min(100, (qrisTimeLeft / 300) * 100))}%` }}
-                />
-              </div>
-            )}
-
-            {/* Body QRIS Card */}
-            <div className="p-5 flex flex-col items-center text-center space-y-3 bg-neutral-50/50">
-              
-              {/* QR Image Container with Expired Overlay */}
-              <div className="relative bg-white p-3 rounded-2xl border border-neutral-200 shadow-sm inline-block overflow-hidden">
-                {qrisDataUrl ? (
-                  <img 
-                    src={qrisDataUrl} 
-                    alt="QRIS Code Dinamis" 
-                    className={`w-48 h-48 mx-auto transition ${isQrisExpired ? 'filter blur-[3px] opacity-40' : ''}`} 
-                  />
-                ) : (
-                  <div className="w-48 h-48 flex items-center justify-center text-xs text-neutral-400">
-                    Memuat QRIS...
-                  </div>
-                )}
-
-                {/* Expired Overlay when Timer hits 0 */}
-                {isQrisExpired && (
-                  <div className="absolute inset-0 bg-neutral-950/70 backdrop-blur-xs flex flex-col items-center justify-center p-3 text-white text-center space-y-2">
-                    <AlertTriangle className="w-8 h-8 text-rose-400 mx-auto" />
-                    <p className="font-bold text-xs">QRIS KEDALUWARSA</p>
-                    <p className="text-[10px] text-neutral-300 leading-tight">Waktu pembayaran 5 menit telah habis demi keamanan.</p>
-                    <button
-                      onClick={handleRegenerateQris}
-                      className="mt-1 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-md transition"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      <span>Buat QRIS Baru</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Total Tagihan Box */}
-              <div className="w-full bg-white p-3.5 rounded-2xl border border-neutral-200 space-y-1 shadow-xs">
-                <span className="text-[10px] uppercase font-semibold text-neutral-400 tracking-wider">Total Tagihan Yang Harus Dibayar</span>
-                <p className="text-xl font-black text-neutral-950">{formatRupiah(activeOrder.total_amount)}</p>
-                <div className="flex justify-between items-center text-[10px] text-neutral-500 pt-1 border-t border-neutral-100 mt-1">
-                  <span>No. Order: <strong>{activeOrder.order_number}</strong></span>
-                  <span>Meja: <strong>{activeOrder.table_number || 'Takeaway'}</strong></span>
-                </div>
-              </div>
-
-              {/* Supported Apps Badges */}
-              <div className="w-full text-left bg-neutral-100 p-2.5 rounded-xl border border-neutral-200 text-[10px] text-neutral-600 space-y-1">
-                <p className="font-semibold text-neutral-800 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Dukungan Aplikasi Pembayaran:</span>
-                </p>
-                <p className="text-neutral-500 leading-relaxed text-[10px]">
-                  BCA Mobile, Livin by Mandiri, GoPay, OVO, DANA, ShopeePay, BRImo, BNI Mobile, LinkAja.
-                </p>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="p-3 bg-white border-t border-neutral-200 flex gap-2">
-              {isQrisExpired ? (
-                <button
-                  onClick={handleRegenerateQris}
-                  className="grow bg-neutral-950 hover:bg-neutral-900 text-white font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition"
-                >
-                  <RefreshCw className="w-4 h-4 text-amber-400" />
-                  <span>Perbarui QRIS (Kode Baru)</span>
-                </button>
-              ) : (
-                <button
-                  onClick={handleConfirmQrisPaid}
-                  className="grow bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-sm"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Saya Sudah Membayar</span>
-                </button>
-              )}
-              <button
-                onClick={() => setIsQrisModalOpen(false)}
-                className="px-4 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold py-2.5 rounded-xl text-xs transition"
-              >
-                Tutup
+                <span>{isSubmitting ? 'Mengirim ke Dapur...' : 'Kirim Pesanan ke Dapur'}</span>
+                <ArrowRight className="w-4 h-4 text-amber-400" />
               </button>
             </div>
 
@@ -876,16 +664,19 @@ function CustomerOrderContent() {
         </div>
       )}
 
-      {/* Table Selector Modal */}
+      {/* Select Table Modal */}
       {isTableModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-sm bg-white rounded-2xl p-4 shadow-lg border border-neutral-200">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-bold text-xs uppercase tracking-wider text-neutral-900">Pilih Nomor Meja</h3>
-              <button onClick={() => setIsTableModalOpen(false)} className="text-neutral-400 hover:text-neutral-900">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xs w-full p-5 shadow-2xl border border-stone-200 space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-stone-100">
+              <h3 className="font-black text-sm text-stone-950">Pilih Nomor Meja Anda</h3>
+              <button onClick={() => setIsTableModalOpen(false)} className="text-stone-400 hover:text-stone-900">
                 <X className="w-4 h-4" />
               </button>
             </div>
+            <p className="text-xs text-stone-500">
+              Pilih nomor meja tempat Anda duduk saat ini:
+            </p>
             <div className="grid grid-cols-5 gap-2">
               {tables.map(tbl => (
                 <button
@@ -894,13 +685,13 @@ function CustomerOrderContent() {
                     setTableNumber(tbl.table_number);
                     setIsTableModalOpen(false);
                   }}
-                  className={`py-2.5 rounded-lg border text-xs font-semibold transition ${
+                  className={`py-3 rounded-2xl text-xs font-bold border transition ${
                     tableNumber === tbl.table_number
-                      ? 'border-neutral-950 bg-neutral-950 text-white'
-                      : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
+                      ? 'bg-stone-900 text-amber-300 border-stone-900 shadow-warm-sm'
+                      : 'bg-white text-stone-700 border-stone-200 hover:border-stone-400'
                   }`}
                 >
-                  {tbl.table_number}
+                  M-{tbl.table_number}
                 </button>
               ))}
             </div>
@@ -908,79 +699,26 @@ function CustomerOrderContent() {
         </div>
       )}
 
-      {/* Modal Pindah Meja Pelanggan */}
-      {isCustomerTransferModalOpen && activeOrder && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="w-full max-w-sm bg-white rounded-2xl p-5 shadow-2xl border border-neutral-200 space-y-4 animate-in zoom-in-95">
-            <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-600">
-                  <ArrowLeftRight className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-neutral-950">Pindah Nomor Meja</h3>
-                  <p className="text-[10px] text-neutral-500">Pindahkan pesanan ke meja baru</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setIsCustomerTransferModalOpen(false)}
-                className="text-neutral-400 hover:text-neutral-900 p-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-xs text-neutral-600 leading-relaxed">
-              Pesanan Anda saat ini tercatat di <strong className="text-neutral-950">Meja {activeOrder.table_number || tableNumber}</strong>. Silakan sentuh nomor meja baru tempat Anda pindah duduk:
-            </p>
-
-            <div className="grid grid-cols-5 gap-2">
-              {tables.map(tbl => {
-                const isCurrent = (activeOrder.table_number || tableNumber) === tbl.table_number;
-                return (
-                  <button
-                    key={tbl.table_number}
-                    disabled={isCurrent || isTransferringTable}
-                    onClick={() => handleCustomerTransferTable(tbl.table_number)}
-                    className={`py-3 rounded-xl border text-center font-bold text-xs transition ${
-                      isCurrent
-                        ? 'bg-neutral-100 text-neutral-400 border-neutral-200 cursor-not-allowed opacity-60'
-                        : 'bg-white hover:bg-neutral-950 hover:text-white border-neutral-300 text-neutral-900 shadow-xs active:scale-95'
-                    }`}
-                  >
-                    M-{tbl.table_number}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="p-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-center">
-              <p className="text-[11px] text-neutral-500">
-                Layar Dapur dan Kasir akan otomatis diperbarui secara realtime agar makanan tidak salah diantar.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Call Waiter Modal */}
+      {/* Waiter Call Modal */}
       {isCallWaiterOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-sm bg-white rounded-2xl p-4 shadow-xl border border-neutral-200 space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-stone-200 space-y-3.5">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100">
               <div className="flex items-center space-x-2">
-                <Bell className="w-4 h-4 text-amber-500" />
-                <h3 className="font-bold text-xs uppercase tracking-tight text-neutral-950">
+                <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
+                  <Bell className="w-4 h-4" />
+                </div>
+                <h3 className="font-black text-xs uppercase tracking-tight text-stone-950">
                   Panggil Pelayan • Meja {tableNumber}
                 </h3>
               </div>
-              <button onClick={() => setIsCallWaiterOpen(false)} className="text-neutral-400 hover:text-neutral-900">
+              <button onClick={() => setIsCallWaiterOpen(false)} className="text-stone-400 hover:text-stone-900">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-neutral-500 leading-relaxed">
-              Pilih jenis bantuan yang Anda butuhkan, staf pelayan kami akan segera datang ke Meja {tableNumber}:
+            <p className="text-xs text-stone-500 leading-relaxed">
+              Pilih bantuan yang Anda butuhkan, pelayan kami akan segera menghampiri Meja {tableNumber}:
             </p>
 
             <div className="space-y-1.5 text-xs">
@@ -995,16 +733,16 @@ function CustomerOrderContent() {
                   type="button"
                   disabled={isSendingCall}
                   onClick={() => handleSendWaiterCall(opt.id)}
-                  className="w-full p-2.5 rounded-xl border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 hover:border-neutral-300 text-left font-semibold text-neutral-800 transition flex items-center justify-between disabled:opacity-50"
+                  className="w-full p-3 rounded-2xl border border-stone-200 bg-stone-50 hover:bg-stone-100 hover:border-stone-300 text-left font-bold text-stone-800 transition flex items-center justify-between disabled:opacity-50"
                 >
                   <span>{opt.label}</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
+                  <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
                 </button>
               ))}
             </div>
 
             {callSuccessNotice && (
-              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-center text-xs text-emerald-800 font-semibold flex items-center justify-center gap-1.5 animate-fadeIn">
+              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-center text-xs text-emerald-800 font-bold flex items-center justify-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>{callSuccessNotice}</span>
               </div>
@@ -1019,7 +757,7 @@ function CustomerOrderContent() {
 
 export default function CustomerOrderPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-xs font-semibold text-neutral-400">Memuat menu...</div>}>
+    <Suspense fallback={<div className="p-8 text-xs font-bold text-stone-400">Memuat menu...</div>}>
       <CustomerOrderContent />
     </Suspense>
   );

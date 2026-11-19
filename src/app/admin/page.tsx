@@ -29,7 +29,10 @@ import {
   FileSpreadsheet,
   Download,
   LogOut,
-  Lock
+  Lock,
+  ArrowUpRight,
+  Percent,
+  Sparkles
 } from 'lucide-react';
 import { Expense, MenuItem, Order, User, RestaurantTable, RestaurantSetting } from '@/types/database';
 import { 
@@ -375,21 +378,23 @@ export default function AdminPage() {
     const selectedAdminObj = users.find(u => u.id === selectedAdminId);
 
     return (
-      <div className="bg-neutral-950 min-h-screen text-white flex flex-col items-center justify-center p-4 font-sans selection:bg-amber-500 selection:text-neutral-950">
-        <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl relative">
+      <div className="bg-[#0E0D0C] min-h-screen text-white flex flex-col items-center justify-center p-4 font-sans selection:bg-amber-500 selection:text-neutral-950 antialiased">
+        <div className="w-full max-w-md bg-[#161514] border border-[#2B2824] rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative">
           
           <div className="text-center space-y-2">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-500/10">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-xl shadow-amber-500/10">
               <Shield className="w-7 h-7" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-white uppercase">Admin Control Center</h1>
-              <p className="text-xs text-neutral-400 mt-1">Otorisasi & Manajemen Pemilik / Manajer Restoran</p>
+              <h1 className="text-lg font-bold tracking-tight text-white uppercase font-mono">
+                Admin Executive Terminal
+              </h1>
+              <p className="text-xs text-[#8C8275] mt-1">Otorisasi & Manajemen Pemilik / Manajer Restoran</p>
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider block">
+            <label className="text-[11px] font-mono font-bold text-[#8C8275] uppercase tracking-wider block">
               Pilih Akun Administrator
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -403,22 +408,22 @@ export default function AdminPage() {
                       setSelectedAdminId(user.id);
                       setLoginError('');
                     }}
-                    className={`p-3 rounded-xl border text-left flex items-center space-x-3 transition ${
+                    className={`p-3 rounded-2xl border text-left flex items-center space-x-3 transition ${
                       isSelected
-                        ? 'bg-amber-500/10 border-amber-500/60 ring-1 ring-amber-500/50'
-                        : 'bg-neutral-950/60 border-neutral-800 hover:border-neutral-700 text-neutral-300'
+                        ? 'bg-amber-500/15 border-amber-500/60 ring-1 ring-amber-500/40'
+                        : 'bg-[#1C1A19] border-[#2B2824] hover:border-[#3D3A35] text-[#D4CCC0]'
                     }`}
                   >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs uppercase ${
-                      isSelected ? 'bg-amber-500 text-neutral-950 font-black' : 'bg-neutral-800 text-neutral-400'
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs uppercase ${
+                      isSelected ? 'bg-amber-500 text-neutral-950 font-black' : 'bg-[#2B2824] text-[#8C8275]'
                     }`}>
                       {user.name.charAt(0)}
                     </div>
                     <div className="overflow-hidden">
-                      <p className={`text-xs font-bold truncate ${isSelected ? 'text-amber-400' : 'text-neutral-200'}`}>
+                      <p className={`text-xs font-bold truncate ${isSelected ? 'text-amber-400' : 'text-[#E8E1D5]'}`}>
                         {user.name}
                       </p>
-                      <p className="text-[10px] text-neutral-400 uppercase font-mono">{user.role}</p>
+                      <p className="text-[10px] text-[#8C8275] uppercase font-mono">{user.role}</p>
                     </div>
                   </button>
                 );
@@ -429,10 +434,10 @@ export default function AdminPage() {
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
-                <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">PIN Masuk</label>
+                <label className="text-[11px] font-mono font-bold text-[#8C8275] uppercase tracking-wider">PIN Masuk</label>
                 {selectedAdminObj && (
-                  <span className="text-[10px] text-neutral-500">
-                    Akun: <strong className="text-neutral-300">{selectedAdminObj.name}</strong>
+                  <span className="text-[10px] text-[#8C8275]">
+                    Akun: <strong className="text-amber-400">{selectedAdminObj.name}</strong>
                   </span>
                 )}
               </div>
@@ -444,8 +449,8 @@ export default function AdminPage() {
                   setAdminPin(e.target.value);
                   setLoginError('');
                 }}
-                placeholder="Masukkan 4-digit PIN..."
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-center tracking-[0.5em] text-lg font-bold text-white focus:outline-none focus:border-amber-500 transition"
+                placeholder="••••"
+                className="w-full bg-[#11100F] border border-[#2B2824] rounded-2xl px-4 py-3 text-center tracking-[0.6em] text-xl font-bold text-white focus:outline-none focus:border-amber-500 transition"
               />
             </div>
 
@@ -455,7 +460,7 @@ export default function AdminPage() {
                   key={num}
                   type="button"
                   onClick={() => setAdminPin(prev => (prev.length < 6 ? prev + num : prev))}
-                  className="py-2.5 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-bold text-neutral-200 transition active:scale-95"
+                  className="py-3 bg-[#1C1A19] hover:bg-[#262421] border border-[#2B2824] rounded-2xl text-base font-bold text-white transition active:scale-95 shadow-xs"
                 >
                   {num}
                 </button>
@@ -463,43 +468,43 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => setAdminPin('')}
-                className="py-2.5 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-xs font-bold text-neutral-400 transition"
+                className="py-3 bg-[#1C1A19] hover:bg-[#262421] border border-[#2B2824] rounded-2xl text-xs font-bold text-[#8C8275] hover:text-white transition"
               >
-                C
+                CLEAR
               </button>
               <button
                 type="button"
                 onClick={() => setAdminPin(prev => (prev.length < 6 ? prev + '0' : prev))}
-                className="py-2.5 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-bold text-neutral-200 transition active:scale-95"
+                className="py-3 bg-[#1C1A19] hover:bg-[#262421] border border-[#2B2824] rounded-2xl text-base font-bold text-white transition active:scale-95 shadow-xs"
               >
                 0
               </button>
               <button
                 type="button"
                 onClick={() => setAdminPin(prev => prev.slice(0, -1))}
-                className="py-2.5 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-xs font-bold text-neutral-400 transition"
+                className="py-3 bg-[#1C1A19] hover:bg-[#262421] border border-[#2B2824] rounded-2xl text-xs font-bold text-[#8C8275] hover:text-white transition"
               >
                 ⌫
               </button>
             </div>
 
             {loginError && (
-              <div className="p-2.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-center text-xs text-rose-400">
+              <div className="p-3 bg-rose-950/60 border border-rose-800/60 rounded-xl text-center text-xs text-rose-300 font-medium">
                 {loginError}
               </div>
             )}
 
             <button
               type="submit"
-              className="w-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-amber-500/20 active:scale-98"
+              className="w-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-black py-3.5 rounded-2xl text-xs uppercase tracking-wider transition shadow-xl shadow-amber-500/20 active:scale-98"
             >
               Masuk Dashboard Admin
             </button>
           </form>
 
-          <div className="pt-2 border-t border-neutral-800 flex items-center justify-between text-[11px] text-neutral-500">
+          <div className="pt-3 border-t border-[#262421] flex items-center justify-between text-xs text-[#8C8275]">
             <Link href="/kasir" className="hover:text-amber-400 transition flex items-center gap-1">
-              ← Ke Layar Kasir (POS)
+              ← Layar Kasir (POS)
             </Link>
             <Link href="/" className="hover:text-amber-400 transition flex items-center gap-1">
               Halaman Pelanggan →
@@ -511,7 +516,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="bg-neutral-100 min-h-screen text-neutral-900 font-sans flex antialiased selection:bg-neutral-900 selection:text-white">
+    <div className="bg-[#FAF8F5] min-h-screen text-[#1A1816] font-sans flex antialiased selection:bg-amber-500 selection:text-black">
       
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
@@ -522,35 +527,35 @@ export default function AdminPage() {
       )}
 
       {/* Fixed Left Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-neutral-950 text-neutral-300 flex flex-col border-r border-neutral-800 transition-transform duration-200 ease-in-out lg:translate-x-0 ${
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#141312] text-[#A69B8D] flex flex-col border-r border-[#262421] transition-transform duration-200 ease-in-out lg:translate-x-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         
         {/* Sidebar Brand Header */}
-        <div className="p-5 border-b border-neutral-800 flex items-center justify-between">
+        <div className="p-5 border-b border-[#262421] flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <Store className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-bold text-sm tracking-tight text-white uppercase">
+              <h2 className="font-bold text-sm tracking-tight text-white uppercase font-serif">
                 {setting?.name || 'Rasa Nusantara'}
               </h2>
-              <p className="text-[10px] text-neutral-400 font-medium">Backoffice Resto</p>
+              <p className="text-[10px] text-[#8C8275] font-medium">Executive Backoffice</p>
             </div>
           </div>
           <button 
             onClick={() => setSidebarOpen(false)} 
-            className="lg:hidden text-neutral-400 hover:text-white p-1"
+            className="lg:hidden text-[#8C8275] hover:text-white p-1"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Admin Identity Card with Logout */}
-        <div className="p-3 mx-3 my-3 bg-neutral-900/80 rounded-xl border border-neutral-800/80 flex items-center justify-between">
+        <div className="p-3 mx-3.5 my-3.5 bg-[#1C1A19] rounded-2xl border border-[#2B2824] flex items-center justify-between">
           <div className="flex items-center space-x-2.5 overflow-hidden">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center font-bold text-xs text-amber-400 shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center font-bold text-xs text-amber-400 shrink-0">
               {activeAdmin?.name?.charAt(0) || 'A'}
             </div>
             <div className="overflow-hidden">
@@ -564,7 +569,7 @@ export default function AdminPage() {
           <button
             onClick={handleAdminLogout}
             title="Keluar Admin"
-            className="p-1.5 text-neutral-400 hover:text-rose-400 hover:bg-neutral-800 rounded-lg transition"
+            className="p-1.5 text-[#8C8275] hover:text-rose-400 hover:bg-[#252320] rounded-xl transition"
           >
             <LogOut className="w-4 h-4" />
           </button>
@@ -585,17 +590,17 @@ export default function AdminPage() {
                 }}
                 className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
                   isActive 
-                    ? 'bg-amber-500 text-neutral-950 font-bold shadow-md shadow-amber-500/20' 
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                    ? 'bg-amber-500 text-neutral-950 font-black shadow-lg shadow-amber-500/20' 
+                    : 'text-[#9C9283] hover:text-white hover:bg-[#1C1A19]'
                 }`}
               >
                 <div className="flex items-center space-x-2.5">
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-neutral-950' : 'text-neutral-400'}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-neutral-950' : 'text-[#8C8275]'}`} />
                   <span>{item.label}</span>
                 </div>
                 {item.badge !== undefined && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono ${
-                    isActive ? 'bg-neutral-950 text-amber-400 font-bold' : 'bg-neutral-900 text-neutral-500 border border-neutral-800'
+                  <span className={`text-[10px] px-2 py-0.5 rounded-md font-mono ${
+                    isActive ? 'bg-neutral-950 text-amber-400 font-bold' : 'bg-[#1C1A19] text-[#8C8275] border border-[#2B2824]'
                   }`}>
                     {item.badge}
                   </span>
@@ -606,12 +611,12 @@ export default function AdminPage() {
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="p-3.5 border-t border-neutral-800 text-[11px] text-neutral-500 space-y-1">
+        <div className="p-4 border-t border-[#262421] text-[11px] text-[#8C8275] space-y-1.5">
           <div className="flex items-center justify-between text-[10px]">
             <span>Mesin Sistem:</span>
-            <span className="text-emerald-400 font-medium">Online & Terhubung</span>
+            <span className="text-emerald-400 font-mono font-bold">ONLINE & SYNCED</span>
           </div>
-          <p className="text-[10px] text-neutral-600">v2.4 Resto Engine Backoffice</p>
+          <p className="text-[10px] text-[#635B50] font-mono">Resto Engine v2.4 Enterprise</p>
         </div>
       </aside>
 
@@ -619,41 +624,41 @@ export default function AdminPage() {
       <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
         
         {/* Top Header */}
-        <header className="bg-white border-b border-neutral-200 sticky top-0 z-30 px-4 sm:px-6 py-3 flex items-center justify-between">
+        <header className="bg-white/90 backdrop-blur-md border-b border-stone-200/80 sticky top-0 z-30 px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-neutral-700 hover:bg-neutral-200"
+              className="lg:hidden w-8 h-8 rounded-xl bg-stone-100 flex items-center justify-center text-stone-700 hover:bg-stone-200"
             >
               <MenuIcon className="w-4 h-4" />
             </button>
             <div>
-              <h1 className="font-bold text-sm tracking-tight text-neutral-950 uppercase">
+              <h1 className="font-bold text-sm tracking-tight text-stone-900 uppercase">
                 {navigationItems.find(i => i.id === activeTab)?.label}
               </h1>
-              <p className="text-[11px] text-neutral-500">
-                Pusat Kontrol & Manajemen Restoran
+              <p className="text-[11px] text-stone-500">
+                Pusat Kontrol & Eksekutif Manajemen Restoran
               </p>
             </div>
           </div>
 
           <div className="flex items-center space-x-2.5">
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-semibold border border-emerald-200">
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 rounded-full text-xs font-semibold border border-emerald-200/80">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              Realtime Sync
+              Realtime Database
             </span>
 
             <button
               onClick={() => window.print()}
-              className="bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition"
+              className="bg-white hover:bg-stone-100 text-stone-800 font-semibold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 border border-stone-200 shadow-warm-sm transition"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Cetak Laporan</span>
+              <span className="hidden sm:inline">Cetak Dokumen</span>
             </button>
 
             <button
               onClick={handleAdminLogout}
-              className="flex items-center space-x-1.5 px-3 py-1.5 bg-neutral-100 hover:bg-rose-50 hover:text-rose-600 text-neutral-700 text-xs font-semibold rounded-lg transition border border-neutral-200"
+              className="flex items-center space-x-1.5 px-3 py-1.5 bg-white hover:bg-rose-50 hover:text-rose-600 text-stone-700 text-xs font-semibold rounded-xl transition border border-stone-200 shadow-warm-sm"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden md:inline">Keluar</span>
@@ -670,42 +675,50 @@ export default function AdminPage() {
               
               {/* Top Financial KPI Row */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-                <div className="bg-white rounded-2xl p-4 border border-neutral-200 shadow-sm space-y-1">
-                  <div className="flex justify-between items-center text-neutral-400">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider">Total Omzet Penjualan</span>
-                    <DollarSign className="w-4 h-4 text-emerald-600" />
+                <div className="bg-white rounded-3xl p-5 border border-stone-200/90 shadow-warm-sm space-y-2">
+                  <div className="flex justify-between items-center text-stone-400">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-stone-500">Total Omzet Penjualan</span>
+                    <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <DollarSign className="w-4 h-4" />
+                    </div>
                   </div>
-                  <h3 className="text-xl font-black text-neutral-950">{formatRupiah(totalIncome)}</h3>
-                  <p className="text-[10px] text-neutral-500 font-medium">Dari {paidOrders.length} transaksi berstatus lunas</p>
+                  <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">{formatRupiah(totalIncome)}</h3>
+                  <p className="text-[11px] text-stone-500 font-medium">Dari {paidOrders.length} transaksi berstatus lunas</p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-4 border border-neutral-200 shadow-sm space-y-1">
-                  <div className="flex justify-between items-center text-neutral-400">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider">Laba Bersih (Net)</span>
-                    <TrendingUp className="w-4 h-4 text-amber-600" />
+                <div className="bg-white rounded-3xl p-5 border border-stone-200/90 shadow-warm-sm space-y-2">
+                  <div className="flex justify-between items-center text-stone-400">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-stone-500">Laba Bersih (Net)</span>
+                    <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4" />
+                    </div>
                   </div>
-                  <h3 className={`text-xl font-black ${netProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                  <h3 className={`text-xl sm:text-2xl font-black tracking-tight ${netProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
                     {formatRupiah(netProfit)}
                   </h3>
-                  <p className="text-[10px] text-neutral-500 font-medium">Omzet dikurangi pengeluaran operasional</p>
+                  <p className="text-[11px] text-stone-500 font-medium">Omzet dikurangi pengeluaran operasional</p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-4 border border-neutral-200 shadow-sm space-y-1">
-                  <div className="flex justify-between items-center text-neutral-400">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider">Rata-rata Order (AOV)</span>
-                    <ShoppingBag className="w-4 h-4 text-neutral-600" />
+                <div className="bg-white rounded-3xl p-5 border border-stone-200/90 shadow-warm-sm space-y-2">
+                  <div className="flex justify-between items-center text-stone-400">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-stone-500">Rata-rata Order (AOV)</span>
+                    <div className="w-7 h-7 rounded-lg bg-stone-100 text-stone-700 flex items-center justify-center">
+                      <ShoppingBag className="w-4 h-4" />
+                    </div>
                   </div>
-                  <h3 className="text-xl font-black text-neutral-950">{formatRupiah(aov)}</h3>
-                  <p className="text-[10px] text-neutral-500 font-medium">Rata-rata belanja per meja / pesanan</p>
+                  <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">{formatRupiah(aov)}</h3>
+                  <p className="text-[11px] text-stone-500 font-medium">Rata-rata belanja per meja / pesanan</p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-4 border border-neutral-200 shadow-sm space-y-1">
-                  <div className="flex justify-between items-center text-neutral-400">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider">Margin Keuntungan</span>
-                    <span className="text-xs font-bold text-neutral-800 font-mono">{profitMargin}%</span>
+                <div className="bg-white rounded-3xl p-5 border border-stone-200/90 shadow-warm-sm space-y-2">
+                  <div className="flex justify-between items-center text-stone-400">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-stone-500">Margin Keuntungan</span>
+                    <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-xs">
+                      %
+                    </div>
                   </div>
-                  <h3 className="text-xl font-black text-neutral-950">{profitMargin}%</h3>
-                  <p className="text-[10px] text-neutral-500 font-medium">Efisiensi keuangan operasional</p>
+                  <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">{profitMargin}%</h3>
+                  <p className="text-[11px] text-stone-500 font-medium">Efisiensi keuangan operasional</p>
                 </div>
               </div>
 
@@ -713,31 +726,31 @@ export default function AdminPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 
                 {/* Visual Sales Bar Chart */}
-                <div className="lg:col-span-2 bg-white rounded-2xl p-5 border border-neutral-200 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+                <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-stone-200/90 shadow-warm-sm space-y-5">
+                  <div className="flex items-center justify-between pb-3 border-b border-stone-100">
                     <div>
-                      <h3 className="font-bold text-sm text-neutral-950">Tren Penjualan Mingguan</h3>
-                      <p className="text-xs text-neutral-500">Estimasi distribusi transaksi harian</p>
+                      <h3 className="font-bold text-sm text-stone-900">Tren Penjualan Mingguan</h3>
+                      <p className="text-xs text-stone-500">Distribusi perkiraan perputaran harian</p>
                     </div>
-                    <span className="text-[11px] font-semibold bg-neutral-100 text-neutral-700 px-2.5 py-1 rounded-lg">
+                    <span className="text-[11px] font-mono font-bold bg-stone-100 text-stone-700 px-3 py-1 rounded-full border border-stone-200">
                       7 Hari Terakhir
                     </span>
                   </div>
 
-                  {/* SVG / Pure CSS Bar Visualizer */}
-                  <div className="h-52 flex items-end gap-3 pt-6 pb-2 px-2">
+                  {/* Pure CSS Bar Visualizer */}
+                  <div className="h-56 flex items-end gap-3 pt-6 pb-2 px-2">
                     {dailyTrend.map((item, idx) => {
-                      const barPercent = Math.max(12, Math.round((item.amount / maxDayAmount) * 100));
+                      const barPercent = Math.max(14, Math.round((item.amount / maxDayAmount) * 100));
                       return (
                         <div key={idx} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
-                          <span className="text-[10px] font-mono text-neutral-500 opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
+                          <span className="text-[10px] font-mono text-stone-500 opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
                             {formatRupiah(item.amount)}
                           </span>
                           <div 
                             style={{ height: `${barPercent}%` }} 
-                            className="w-full bg-neutral-900 group-hover:bg-amber-500 rounded-t-lg transition duration-200"
+                            className="w-full bg-[#181615] group-hover:bg-amber-500 rounded-t-xl transition duration-200 shadow-xs"
                           />
-                          <span className="text-[11px] font-bold text-neutral-600 mt-1">{item.day}</span>
+                          <span className="text-xs font-bold text-stone-600 mt-1">{item.day}</span>
                         </div>
                       );
                     })}
@@ -745,65 +758,65 @@ export default function AdminPage() {
                 </div>
 
                 {/* Metode Pembayaran Breakdown */}
-                <div className="bg-white rounded-2xl p-5 border border-neutral-200 shadow-sm space-y-4">
-                  <div className="pb-3 border-b border-neutral-100">
-                    <h3 className="font-bold text-sm text-neutral-950">Metode Pembayaran</h3>
-                    <p className="text-xs text-neutral-500">Distribusi realisasi pembayaran pelanggan</p>
+                <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-warm-sm space-y-5">
+                  <div className="pb-3 border-b border-stone-100">
+                    <h3 className="font-bold text-sm text-stone-900">Metode Pembayaran</h3>
+                    <p className="text-xs text-stone-500">Realisasi pembayaran tamu</p>
                   </div>
 
                   <div className="space-y-4 pt-1">
                     {/* QRIS */}
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs">
-                        <span className="font-semibold text-neutral-800">QRIS (GoPay/BCA/OVO)</span>
-                        <span className="font-bold text-neutral-950">{formatRupiah(qrisRevenue)}</span>
+                        <span className="font-semibold text-stone-800">QRIS Dinamis / Statis</span>
+                        <span className="font-bold text-stone-900 font-mono">{formatRupiah(qrisRevenue)}</span>
                       </div>
-                      <div className="w-full bg-neutral-100 rounded-full h-2 overflow-hidden">
+                      <div className="w-full bg-stone-100 rounded-full h-2 overflow-hidden">
                         <div 
                           className="bg-amber-500 h-2 rounded-full transition-all" 
                           style={{ width: `${totalIncome > 0 ? (qrisRevenue / totalIncome) * 100 : 0}%` }}
                         />
                       </div>
-                      <p className="text-[10px] text-neutral-400">{paymentBreakdown.QRIS.length} transaksi</p>
+                      <p className="text-[10px] text-stone-400">{paymentBreakdown.QRIS.length} transaksi</p>
                     </div>
 
                     {/* Tunai */}
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs">
-                        <span className="font-semibold text-neutral-800">Tunai (Cash di Kasir)</span>
-                        <span className="font-bold text-neutral-950">{formatRupiah(tunaiRevenue)}</span>
+                        <span className="font-semibold text-stone-800">Tunai (Cash di Kasir)</span>
+                        <span className="font-bold text-stone-900 font-mono">{formatRupiah(tunaiRevenue)}</span>
                       </div>
-                      <div className="w-full bg-neutral-100 rounded-full h-2 overflow-hidden">
+                      <div className="w-full bg-stone-100 rounded-full h-2 overflow-hidden">
                         <div 
                           className="bg-emerald-600 h-2 rounded-full transition-all" 
                           style={{ width: `${totalIncome > 0 ? (tunaiRevenue / totalIncome) * 100 : 0}%` }}
                         />
                       </div>
-                      <p className="text-[10px] text-neutral-400">{paymentBreakdown.Tunai.length} transaksi</p>
+                      <p className="text-[10px] text-stone-400">{paymentBreakdown.Tunai.length} transaksi</p>
                     </div>
 
                     {/* Debit / Transfer */}
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs">
-                        <span className="font-semibold text-neutral-800">Kartu Debit & Transfer</span>
-                        <span className="font-bold text-neutral-950">{formatRupiah(debitRevenue)}</span>
+                        <span className="font-semibold text-stone-800">Kartu Debit & Transfer</span>
+                        <span className="font-bold text-stone-900 font-mono">{formatRupiah(debitRevenue)}</span>
                       </div>
-                      <div className="w-full bg-neutral-100 rounded-full h-2 overflow-hidden">
+                      <div className="w-full bg-stone-100 rounded-full h-2 overflow-hidden">
                         <div 
-                          className="bg-neutral-800 h-2 rounded-full transition-all" 
+                          className="bg-[#181615] h-2 rounded-full transition-all" 
                           style={{ width: `${totalIncome > 0 ? (debitRevenue / totalIncome) * 100 : 0}%` }}
                         />
                       </div>
-                      <p className="text-[10px] text-neutral-400">{paymentBreakdown.Debit.length} transaksi</p>
+                      <p className="text-[10px] text-stone-400">{paymentBreakdown.Debit.length} transaksi</p>
                     </div>
                   </div>
 
                   {/* Order Type Pill */}
-                  <div className="pt-3 border-t border-neutral-100 flex items-center justify-between text-xs">
-                    <span className="text-neutral-500">Tipe Pesanan:</span>
+                  <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs">
+                    <span className="text-stone-500">Tipe Pesanan:</span>
                     <div className="flex gap-2">
-                      <span className="bg-neutral-100 px-2 py-0.5 rounded font-semibold text-neutral-800">Dine-in: {dineInCount}</span>
-                      <span className="bg-neutral-100 px-2 py-0.5 rounded font-semibold text-neutral-800">Takeaway: {takeawayCount}</span>
+                      <span className="bg-stone-100 px-2.5 py-0.5 rounded-lg font-bold text-stone-800">Dine-in: {dineInCount}</span>
+                      <span className="bg-stone-100 px-2.5 py-0.5 rounded-lg font-bold text-stone-800">Takeaway: {takeawayCount}</span>
                     </div>
                   </div>
                 </div>
@@ -813,31 +826,31 @@ export default function AdminPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 
                 {/* Top 5 Best Sellers */}
-                <div className="bg-white rounded-2xl p-5 border border-neutral-200 shadow-sm space-y-4">
-                  <div className="flex justify-between items-center pb-3 border-b border-neutral-100">
+                <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-warm-sm space-y-4">
+                  <div className="flex justify-between items-center pb-3 border-b border-stone-100">
                     <div>
-                      <h3 className="font-bold text-sm text-neutral-950">Top 5 Menu Paling Laris</h3>
-                      <p className="text-xs text-neutral-500">Menu paling sering dipesan oleh pelanggan</p>
+                      <h3 className="font-bold text-sm text-stone-900">Top 5 Menu Terlaris</h3>
+                      <p className="text-xs text-stone-500">Menu paling sering dipesan oleh pelanggan</p>
                     </div>
-                    <span className="text-xs font-mono font-bold text-neutral-500">Total: {totalItemSold} porsi</span>
+                    <span className="text-xs font-mono font-bold text-stone-500">Total: {totalItemSold} porsi</span>
                   </div>
 
                   <div className="space-y-3">
                     {bestSellers.length === 0 ? (
-                      <p className="text-xs text-neutral-400 py-4 text-center">Belum ada menu yang lunas terjual.</p>
+                      <p className="text-xs text-stone-400 py-6 text-center">Belum ada menu yang lunas terjual.</p>
                     ) : (
                       bestSellers.map((item, idx) => {
                         const percent = totalItemSold > 0 ? Math.round((item.qty / totalItemSold) * 100) : 0;
                         return (
                           <div key={idx} className="space-y-1">
                             <div className="flex items-center justify-between text-xs">
-                              <span className="font-semibold text-neutral-900">{idx + 1}. {item.name}</span>
+                              <span className="font-bold text-stone-900">{idx + 1}. {item.name}</span>
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-neutral-900">{item.qty} porsi</span>
-                                <span className="text-neutral-400 text-[11px]">({formatRupiah(item.revenue)})</span>
+                                <span className="font-mono font-bold text-stone-900">{item.qty} porsi</span>
+                                <span className="text-stone-400 text-[11px] font-mono">({formatRupiah(item.revenue)})</span>
                               </div>
                             </div>
-                            <div className="w-full bg-neutral-100 rounded-full h-1.5 overflow-hidden">
+                            <div className="w-full bg-stone-100 rounded-full h-1.5 overflow-hidden">
                               <div 
                                 className="bg-amber-500 h-1.5 rounded-full" 
                                 style={{ width: `${percent}%` }}
@@ -851,33 +864,33 @@ export default function AdminPage() {
                 </div>
 
                 {/* Performa Omzet Meja */}
-                <div className="bg-white rounded-2xl p-5 border border-neutral-200 shadow-sm space-y-4">
-                  <div className="flex justify-between items-center pb-3 border-b border-neutral-100">
+                <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-warm-sm space-y-4">
+                  <div className="flex justify-between items-center pb-3 border-b border-stone-100">
                     <div>
-                      <h3 className="font-bold text-sm text-neutral-950">Performa Meja Makan</h3>
-                      <p className="text-xs text-neutral-500">Ranking meja dengan perolehan omzet tertinggi</p>
+                      <h3 className="font-bold text-sm text-stone-900">Performa Meja Restoran</h3>
+                      <p className="text-xs text-stone-500">Ranking meja dengan perolehan omzet tertinggi</p>
                     </div>
                   </div>
 
                   <div className="space-y-2.5">
                     {Object.keys(tableRevenueMap).length === 0 ? (
-                      <p className="text-xs text-neutral-400 py-4 text-center">Belum ada transaksi meja tersimpan.</p>
+                      <p className="text-xs text-stone-400 py-6 text-center">Belum ada transaksi meja tersimpan.</p>
                     ) : (
                       Object.entries(tableRevenueMap)
                         .sort(([, a], [, b]) => b.revenue - a.revenue)
                         .slice(0, 5)
                         .map(([tableNum, data], idx) => (
-                          <div key={idx} className="flex items-center justify-between p-2.5 bg-neutral-50 rounded-xl border border-neutral-100 text-xs">
-                            <div className="flex items-center gap-2.5">
-                              <span className="w-6 h-6 rounded-lg bg-neutral-900 text-white font-bold flex items-center justify-center text-[10px]">
+                          <div key={idx} className="flex items-center justify-between p-3 bg-stone-50/80 rounded-2xl border border-stone-200/80 text-xs">
+                            <div className="flex items-center gap-3">
+                              <span className="w-7 h-7 rounded-xl bg-stone-900 text-white font-bold flex items-center justify-center text-xs">
                                 #{idx + 1}
                               </span>
                               <div>
-                                <p className="font-bold text-neutral-900">Meja {tableNum}</p>
-                                <p className="text-[10px] text-neutral-500">{data.count} kali pemesanan</p>
+                                <p className="font-bold text-stone-900">Meja {tableNum}</p>
+                                <p className="text-[10px] text-stone-500">{data.count} kali pemesanan</p>
                               </div>
                             </div>
-                            <span className="font-bold text-neutral-950 font-mono">{formatRupiah(data.revenue)}</span>
+                            <span className="font-mono font-bold text-stone-900">{formatRupiah(data.revenue)}</span>
                           </div>
                         ))
                     )}
@@ -891,46 +904,46 @@ export default function AdminPage() {
           {/* TAB 2: MANAJEMEN KARYAWAN & KASIR */}
           {activeTab === 'users' && (
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-3xl border border-stone-200/90 shadow-warm-sm">
                 <div>
-                  <h3 className="font-bold text-sm text-neutral-950">Kelola Pengguna & Akun Kasir</h3>
-                  <p className="text-xs text-neutral-500">Tambah akun staf kasir, atur 4-digit PIN shift, dan hak akses sistem</p>
+                  <h3 className="font-bold text-sm text-stone-900">Kelola Pengguna & Akun Kasir</h3>
+                  <p className="text-xs text-stone-500">Tambah akun staf kasir, atur 4-digit PIN shift, dan hak akses sistem</p>
                 </div>
                 <button
                   onClick={() => setIsAddUserOpen(true)}
-                  className="bg-neutral-950 hover:bg-neutral-900 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition self-start sm:self-auto shadow-sm"
+                  className="bg-stone-900 hover:bg-black text-white font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-1.5 transition self-start sm:self-auto shadow-md"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4 text-amber-400" />
                   <span>Tambah Karyawan Baru</span>
                 </button>
               </div>
 
               {/* Users Table */}
-              <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+              <div className="bg-white rounded-3xl border border-stone-200/90 shadow-warm-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="bg-neutral-50 border-b border-neutral-200 text-neutral-600 font-semibold text-[11px]">
-                        <th className="py-3 px-4">Nama Karyawan</th>
-                        <th className="py-3 px-4">Username</th>
-                        <th className="py-3 px-4">Role Akses</th>
-                        <th className="py-3 px-4">PIN Kasir</th>
-                        <th className="py-3 px-4">Status</th>
-                        <th className="py-3 px-4 text-center">Aksi</th>
+                      <tr className="bg-stone-50 border-b border-stone-200 text-stone-600 font-semibold text-[11px]">
+                        <th className="py-3.5 px-5">Nama Karyawan</th>
+                        <th className="py-3.5 px-5">Username</th>
+                        <th className="py-3.5 px-5">Role Akses</th>
+                        <th className="py-3.5 px-5">PIN Kasir</th>
+                        <th className="py-3.5 px-5">Status</th>
+                        <th className="py-3.5 px-5 text-center">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-100">
+                    <tbody className="divide-y divide-stone-100">
                       {users.map(u => (
-                        <tr key={u.id} className="hover:bg-neutral-50/50">
-                          <td className="py-3 px-4 font-bold text-neutral-900 flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-lg bg-neutral-100 border border-neutral-200 flex items-center justify-center font-bold text-neutral-700 text-xs">
+                        <tr key={u.id} className="hover:bg-stone-50/60 transition">
+                          <td className="py-3.5 px-5 font-bold text-stone-900 flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center font-bold text-amber-700 text-xs">
                               {u.name.charAt(0)}
                             </div>
                             <span>{u.name}</span>
                           </td>
-                          <td className="py-3 px-4 font-mono text-neutral-600">{u.username || '-'}</td>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                          <td className="py-3.5 px-5 font-mono text-stone-600">{u.username || '-'}</td>
+                          <td className="py-3.5 px-5">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                               u.role === 'admin' 
                                 ? 'bg-amber-100 text-amber-900 border border-amber-200' 
                                 : u.role === 'kasir' 
@@ -940,28 +953,28 @@ export default function AdminPage() {
                               {u.role}
                             </span>
                           </td>
-                          <td className="py-3 px-4 font-mono font-bold text-neutral-800 tracking-widest">
+                          <td className="py-3.5 px-5 font-mono font-bold text-stone-800 tracking-widest">
                             {u.pin ? '••••' : 'Tanpa PIN'}
                           </td>
-                          <td className="py-3 px-4">
+                          <td className="py-3.5 px-5">
                             <button
                               onClick={() => handleToggleUserStatus(u)}
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition ${
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition ${
                                 u.is_active !== false 
                                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100' 
-                                  : 'bg-neutral-100 text-neutral-500 border border-neutral-200 hover:bg-neutral-200'
+                                  : 'bg-stone-100 text-stone-500 border border-stone-200 hover:bg-stone-200'
                               }`}
                             >
                               {u.is_active !== false ? 'Aktif' : 'Nonaktif'}
                             </button>
                           </td>
-                          <td className="py-3 px-4 text-center">
+                          <td className="py-3.5 px-5 text-center">
                             <button
                               onClick={() => handleDeleteUser(u.id)}
-                              className="text-neutral-400 hover:text-rose-600 p-1 transition"
+                              className="text-stone-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition"
                               title="Hapus Karyawan"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </td>
                         </tr>
@@ -976,53 +989,53 @@ export default function AdminPage() {
           {/* TAB 3: KATALOG MENU & STOK */}
           {activeTab === 'menus' && (
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-3xl border border-stone-200/90 shadow-warm-sm">
                 <div>
-                  <h3 className="font-bold text-sm text-neutral-950">Katalog Makanan & Minuman</h3>
-                  <p className="text-xs text-neutral-500">Kelola daftar menu yang tampil di scan QR Meja dan Kasir POS</p>
+                  <h3 className="font-bold text-sm text-stone-900">Katalog Makanan & Minuman</h3>
+                  <p className="text-xs text-stone-500">Kelola daftar menu yang tampil di scan QR Meja dan Kasir POS</p>
                 </div>
                 <button
                   onClick={() => setIsAddMenuOpen(true)}
-                  className="bg-neutral-950 hover:bg-neutral-900 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition self-start sm:self-auto"
+                  className="bg-stone-900 hover:bg-black text-white font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-1.5 transition self-start sm:self-auto shadow-md"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4 text-amber-400" />
                   <span>Tambah Menu Baru</span>
                 </button>
               </div>
 
               {/* Menu Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {menus.map(item => (
-                  <div key={item.id} className="bg-white rounded-2xl border border-neutral-200 p-3.5 flex gap-3 shadow-sm hover:shadow-md transition">
+                  <div key={item.id} className="bg-white rounded-3xl border border-stone-200/90 p-4 flex gap-3.5 shadow-warm-sm hover:shadow-warm-md transition">
                     <img 
                       src={item.image} 
                       alt={item.name} 
-                      className="w-20 h-20 rounded-xl object-cover bg-neutral-100 shrink-0" 
+                      className="w-20 h-20 rounded-2xl object-cover bg-stone-100 shrink-0" 
                     />
                     <div className="flex flex-col justify-between grow min-w-0">
                       <div>
                         <div className="flex justify-between items-start gap-1">
-                          <h4 className="font-bold text-xs text-neutral-900 truncate">{item.name}</h4>
+                          <h4 className="font-bold text-xs text-stone-900 truncate">{item.name}</h4>
                           <button
                             onClick={() => handleDeleteMenu(item.id)}
-                            className="text-neutral-300 hover:text-rose-600 transition"
+                            className="text-stone-300 hover:text-rose-600 transition"
                             title="Hapus Menu"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                        <p className="text-[10px] text-neutral-500 line-clamp-1 mt-0.5">{item.description}</p>
-                        <p className="text-xs font-bold text-neutral-950 mt-1">{formatRupiah(item.price)}</p>
+                        <p className="text-[10px] text-stone-500 line-clamp-1 mt-0.5">{item.description}</p>
+                        <p className="text-xs font-mono font-bold text-stone-900 mt-1">{formatRupiah(item.price)}</p>
                       </div>
 
-                      <div className="pt-2 border-t border-neutral-100 flex items-center justify-between">
-                        <span className="text-[10px] text-neutral-500">Status:</span>
+                      <div className="pt-2 border-t border-stone-100 flex items-center justify-between">
+                        <span className="text-[10px] text-stone-500">Status Stok:</span>
                         <button
                           onClick={() => handleToggleMenu(item.id, item.is_available)}
-                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition ${
+                          className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full transition ${
                             item.is_available 
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                              : 'bg-neutral-100 text-neutral-500 border border-neutral-200'
+                              : 'bg-stone-100 text-stone-500 border border-stone-200'
                           }`}
                         >
                           {item.is_available ? 'Tersedia' : 'Stok Habis'}
@@ -1038,22 +1051,22 @@ export default function AdminPage() {
           {/* TAB 4: MEJA & KODE QR */}
           {activeTab === 'tables' && (
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-3xl border border-stone-200/90 shadow-warm-sm">
                 <div>
-                  <h3 className="font-bold text-sm text-neutral-950">Manajemen Meja & QR Stand</h3>
-                  <p className="text-xs text-neutral-500">Daftar meja restoran yang telah terpasang standing akrilik QR</p>
+                  <h3 className="font-bold text-sm text-stone-900">Manajemen Meja & QR Stand</h3>
+                  <p className="text-xs text-stone-500">Daftar meja restoran yang telah terpasang standing akrilik QR</p>
                 </div>
                 <Link
                   href="/qr-meja"
-                  className="bg-neutral-950 hover:bg-neutral-900 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition self-start sm:self-auto"
+                  className="bg-stone-900 hover:bg-black text-white font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-1.5 transition self-start sm:self-auto shadow-md"
                 >
-                  <QrCode className="w-3.5 h-3.5" />
-                  <span>Buka Standing Generator QR Meja</span>
+                  <QrCode className="w-4 h-4 text-amber-400" />
+                  <span>Buka Generator Standing Akrilik QR</span>
                 </Link>
               </div>
 
               {/* Tables Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
                 {tables.map(tbl => {
                   const hasActiveOrder = orders.some(
                     o => o.table_number === tbl.table_number && 
@@ -1064,20 +1077,20 @@ export default function AdminPage() {
                   return (
                     <div 
                       key={tbl.id} 
-                      className={`p-4 rounded-2xl border text-center transition ${
+                      className={`p-4 rounded-3xl border text-center transition ${
                         hasActiveOrder 
-                          ? 'bg-amber-50 border-amber-300 text-amber-950' 
-                          : 'bg-white border-neutral-200 text-neutral-900'
+                          ? 'bg-amber-50/80 border-amber-300 text-amber-950 shadow-warm-sm' 
+                          : 'bg-white border-stone-200/90 text-stone-900 shadow-warm-sm'
                       }`}
                     >
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-stone-400 block mb-1">
                         {tbl.table_code}
                       </span>
-                      <h4 className="text-xl font-black text-neutral-950">Meja {tbl.table_number}</h4>
+                      <h4 className="text-xl font-black text-stone-900">Meja {tbl.table_number}</h4>
                       <div className="mt-3">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                           hasActiveOrder 
-                            ? 'bg-amber-200/60 text-amber-900' 
+                            ? 'bg-amber-200/70 text-amber-950' 
                             : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                         }`}>
                           {hasActiveOrder ? 'Sedang Terisi' : 'Kosong / Tersedia'}
@@ -1093,57 +1106,57 @@ export default function AdminPage() {
           {/* TAB 5: PESANAN & TRANSAKSI */}
           {activeTab === 'orders' && (
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-3xl border border-stone-200/90 shadow-warm-sm">
                 <div>
-                  <h3 className="font-bold text-sm text-neutral-950">Riwayat Pesanan & Transaksi Restoran</h3>
-                  <p className="text-xs text-neutral-500">Semua pesanan yang masuk melalui Scan QR Meja dan Kasir POS</p>
+                  <h3 className="font-bold text-sm text-stone-900">Riwayat Transaksi Lengkap</h3>
+                  <p className="text-xs text-stone-500">Semua pesanan yang masuk melalui Scan QR Meja dan Kasir POS</p>
                 </div>
                 <button
                   onClick={handleExportCSV}
-                  className="bg-neutral-950 hover:bg-neutral-900 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition self-start sm:self-auto shadow-xs"
+                  className="bg-stone-900 hover:bg-black text-white font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-1.5 transition self-start sm:self-auto shadow-md"
                 >
-                  <Download className="w-3.5 h-3.5" />
+                  <Download className="w-4 h-4 text-amber-400" />
                   <span>Export Laporan (CSV / Excel)</span>
                 </button>
               </div>
 
-              <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+              <div className="bg-white rounded-3xl border border-stone-200/90 shadow-warm-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="bg-neutral-50 border-b border-neutral-200 text-neutral-600 font-semibold text-[11px]">
-                        <th className="py-3 px-4">No. Order</th>
-                        <th className="py-3 px-4">Meja / Tipe</th>
-                        <th className="py-3 px-4">Pelanggan</th>
-                        <th className="py-3 px-4">Kasir Pelayan</th>
-                        <th className="py-3 px-4">Total</th>
-                        <th className="py-3 px-4">Metode</th>
-                        <th className="py-3 px-4">Status Pesanan</th>
-                        <th className="py-3 px-4">Status Bayar</th>
+                      <tr className="bg-stone-50 border-b border-stone-200 text-stone-600 font-semibold text-[11px]">
+                        <th className="py-3.5 px-5">No. Order</th>
+                        <th className="py-3.5 px-5">Meja / Tipe</th>
+                        <th className="py-3.5 px-5">Pelanggan</th>
+                        <th className="py-3.5 px-5">Kasir Pelayan</th>
+                        <th className="py-3.5 px-5">Total</th>
+                        <th className="py-3.5 px-5">Metode</th>
+                        <th className="py-3.5 px-5">Status Pesanan</th>
+                        <th className="py-3.5 px-5">Status Bayar</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-100">
+                    <tbody className="divide-y divide-stone-100">
                       {orders.map(ord => (
-                        <tr key={ord.id} className="hover:bg-neutral-50/50">
-                          <td className="py-3 px-4 font-mono font-bold text-neutral-900">{ord.order_number}</td>
-                          <td className="py-3 px-4 font-bold">
+                        <tr key={ord.id} className="hover:bg-stone-50/60 transition">
+                          <td className="py-3.5 px-5 font-mono font-bold text-stone-900">{ord.order_number}</td>
+                          <td className="py-3.5 px-5 font-bold">
                             {ord.order_type === 'takeaway' ? 'Takeaway' : `Meja ${ord.table_number}`}
                           </td>
-                          <td className="py-3 px-4 text-neutral-700">{ord.customer_name}</td>
-                          <td className="py-3 px-4">
-                            <span className="text-[11px] font-semibold text-neutral-800 bg-neutral-100 px-2 py-0.5 rounded">
+                          <td className="py-3.5 px-5 text-stone-700">{ord.customer_name}</td>
+                          <td className="py-3.5 px-5">
+                            <span className="text-[11px] font-semibold text-stone-800 bg-stone-100 px-2 py-0.5 rounded-md">
                               {ord.cashier_name || 'Kasir'}
                             </span>
                           </td>
-                          <td className="py-3 px-4 font-bold text-neutral-950 font-mono">{formatRupiah(ord.total_amount)}</td>
-                          <td className="py-3 px-4 text-neutral-600 font-medium">{ord.payment_method}</td>
-                          <td className="py-3 px-4">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-neutral-100 text-neutral-800">
+                          <td className="py-3.5 px-5 font-bold text-stone-950 font-mono">{formatRupiah(ord.total_amount)}</td>
+                          <td className="py-3.5 px-5 text-stone-600 font-medium">{ord.payment_method}</td>
+                          <td className="py-3.5 px-5">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-100 text-stone-800">
                               {ord.order_status}
                             </span>
                           </td>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                          <td className="py-3.5 px-5">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                               ord.payment_status === 'paid' 
                                 ? 'bg-emerald-100 text-emerald-900 border border-emerald-200' 
                                 : 'bg-amber-100 text-amber-900 border border-amber-200'
@@ -1163,51 +1176,51 @@ export default function AdminPage() {
           {/* TAB 6: PENGELUARAN & BIAYA */}
           {activeTab === 'expenses' && (
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-3xl border border-stone-200/90 shadow-warm-sm">
                 <div>
-                  <h3 className="font-bold text-sm text-neutral-950">Catatan Pengeluaran & Pembelian Restoran</h3>
-                  <p className="text-xs text-neutral-500">Mencatat pembelian bahan baku dapur, utilitas listrik/gas, dan gaji</p>
+                  <h3 className="font-bold text-sm text-stone-900">Catatan Pengeluaran Operasional</h3>
+                  <p className="text-xs text-stone-500">Mencatat pembelian bahan baku dapur, utilitas listrik/gas, dan gaji</p>
                 </div>
                 <button
                   onClick={() => setIsAddExpenseOpen(true)}
-                  className="bg-neutral-950 hover:bg-neutral-900 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition self-start sm:self-auto"
+                  className="bg-stone-900 hover:bg-black text-white font-bold px-4 py-2.5 rounded-2xl text-xs flex items-center gap-1.5 transition self-start sm:self-auto shadow-md"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4 text-amber-400" />
                   <span>Tambah Pengeluaran</span>
                 </button>
               </div>
 
-              <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+              <div className="bg-white rounded-3xl border border-stone-200/90 shadow-warm-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="bg-neutral-50 border-b border-neutral-200 text-neutral-600 font-semibold text-[11px]">
-                        <th className="py-3 px-4">Tanggal</th>
-                        <th className="py-3 px-4">Kategori Biaya</th>
-                        <th className="py-3 px-4">Keterangan</th>
-                        <th className="py-3 px-4 text-right">Nominal</th>
-                        <th className="py-3 px-4 text-center">Hapus</th>
+                      <tr className="bg-stone-50 border-b border-stone-200 text-stone-600 font-semibold text-[11px]">
+                        <th className="py-3.5 px-5">Tanggal</th>
+                        <th className="py-3.5 px-5">Kategori Biaya</th>
+                        <th className="py-3.5 px-5">Keterangan</th>
+                        <th className="py-3.5 px-5 text-right">Nominal</th>
+                        <th className="py-3.5 px-5 text-center">Hapus</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-100">
+                    <tbody className="divide-y divide-stone-100">
                       {expenses.map(exp => (
-                        <tr key={exp.id} className="hover:bg-neutral-50/50">
-                          <td className="py-3 px-4 text-neutral-600 font-mono">{exp.expense_date}</td>
-                          <td className="py-3 px-4">
-                            <span className="bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded text-[11px] font-medium border border-neutral-200">
+                        <tr key={exp.id} className="hover:bg-stone-50/60 transition">
+                          <td className="py-3.5 px-5 text-stone-600 font-mono">{exp.expense_date}</td>
+                          <td className="py-3.5 px-5">
+                            <span className="bg-stone-100 text-stone-700 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border border-stone-200">
                               {exp.category}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-neutral-900">{exp.description}</td>
-                          <td className="py-3 px-4 text-right font-bold text-neutral-950 font-mono">
+                          <td className="py-3.5 px-5 text-stone-900">{exp.description}</td>
+                          <td className="py-3.5 px-5 text-right font-bold text-stone-950 font-mono">
                             {formatRupiah(exp.amount)}
                           </td>
-                          <td className="py-3 px-4 text-center">
+                          <td className="py-3.5 px-5 text-center">
                             <button
                               onClick={() => handleDeleteExpense(exp.id)}
-                              className="text-neutral-400 hover:text-rose-600 p-1 transition"
+                              className="text-stone-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </td>
                         </tr>
@@ -1219,54 +1232,52 @@ export default function AdminPage() {
             </div>
           )}
 
-
-
         </main>
       </div>
 
       {/* MODAL TAMBAH USER / KARYAWAN */}
       {isAddUserOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden p-6 space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b border-neutral-100">
-              <h3 className="font-bold text-sm text-neutral-950">Tambah Akun Karyawan / Kasir</h3>
-              <button onClick={() => setIsAddUserOpen(false)} className="text-neutral-400 hover:text-neutral-900">
-                <X className="w-4 h-4" />
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden p-6 space-y-4 border border-stone-200">
+            <div className="flex justify-between items-center pb-3 border-b border-stone-100">
+              <h3 className="font-bold text-sm text-stone-900">Tambah Akun Karyawan / Kasir</h3>
+              <button onClick={() => setIsAddUserOpen(false)} className="text-stone-400 hover:text-stone-900">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleAddUser} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-neutral-700 mb-1">Nama Lengkap</label>
+                <label className="block font-semibold text-stone-700 mb-1">Nama Lengkap</label>
                 <input
                   type="text"
                   placeholder="Contoh: Rina Maharani"
                   value={newUserName}
                   onChange={e => setNewUserName(e.target.value)}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs focus:bg-white"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-3.5 py-2.5 text-xs focus:bg-white focus:outline-none focus:border-amber-500"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block font-semibold text-neutral-700 mb-1">Username Login</label>
+                  <label className="block font-semibold text-stone-700 mb-1">Username Login</label>
                   <input
                     type="text"
                     placeholder="rina"
                     value={newUserUsername}
                     onChange={e => setNewUserUsername(e.target.value)}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs font-mono focus:bg-white"
+                    className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-3.5 py-2.5 text-xs font-mono focus:bg-white focus:outline-none focus:border-amber-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-neutral-700 mb-1">Role Akses</label>
+                  <label className="block font-semibold text-stone-700 mb-1">Role Akses</label>
                   <select
                     value={newUserRole}
                     onChange={e => setNewUserRole(e.target.value as any)}
-                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs focus:bg-white"
+                    className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-3.5 py-2.5 text-xs focus:bg-white focus:outline-none focus:border-amber-500"
                   >
                     <option value="kasir">Kasir</option>
                     <option value="dapur">Dapur (Chef)</option>
@@ -1276,41 +1287,41 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block font-semibold text-neutral-700 mb-1">4-Digit PIN Kasir</label>
+                <label className="block font-semibold text-stone-700 mb-1">4-Digit PIN Kasir</label>
                 <input
                   type="password"
                   maxLength={6}
                   placeholder="1234"
                   value={newUserPin}
                   onChange={e => setNewUserPin(e.target.value)}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs font-mono tracking-widest focus:bg-white"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-3.5 py-2.5 text-xs font-mono tracking-widest focus:bg-white focus:outline-none focus:border-amber-500"
                   required
                 />
-                <p className="text-[10px] text-neutral-400 mt-0.5">Digunakan staf saat membuka shift kasir di terminal POS.</p>
+                <p className="text-[10px] text-stone-400 mt-0.5">Digunakan staf saat membuka shift kasir di terminal POS.</p>
               </div>
 
               <div>
-                <label className="block font-semibold text-neutral-700 mb-1">Email (Opsional)</label>
+                <label className="block font-semibold text-stone-700 mb-1">Email (Opsional)</label>
                 <input
                   type="email"
                   placeholder="rina@resto.com"
                   value={newUserEmail}
                   onChange={e => setNewUserEmail(e.target.value)}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs focus:bg-white"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-3.5 py-2.5 text-xs focus:bg-white focus:outline-none focus:border-amber-500"
                 />
               </div>
 
               <div className="pt-2 flex gap-2">
                 <button
                   type="submit"
-                  className="grow bg-neutral-950 hover:bg-neutral-900 text-white font-semibold py-2.5 rounded-xl text-xs transition"
+                  className="grow bg-stone-900 hover:bg-black text-white font-bold py-3 rounded-2xl text-xs transition"
                 >
                   Simpan Karyawan
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsAddUserOpen(false)}
-                  className="px-4 bg-neutral-100 text-neutral-700 font-semibold py-2.5 rounded-xl text-xs hover:bg-neutral-200"
+                  className="px-4 bg-stone-100 text-stone-700 font-bold py-3 rounded-2xl text-xs hover:bg-stone-200"
                 >
                   Batal
                 </button>
@@ -1322,22 +1333,22 @@ export default function AdminPage() {
 
       {/* MODAL TAMBAH MENU */}
       {isAddMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden p-6 space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b border-neutral-100">
-              <h3 className="font-bold text-sm text-neutral-950">Tambah Menu Makanan/Minuman</h3>
-              <button onClick={() => setIsAddMenuOpen(false)} className="text-neutral-400 hover:text-neutral-900">
-                <X className="w-4 h-4" />
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden p-6 space-y-4 border border-stone-200">
+            <div className="flex justify-between items-center pb-3 border-b border-stone-100">
+              <h3 className="font-bold text-sm text-stone-900">Tambah Menu Makanan/Minuman</h3>
+              <button onClick={() => setIsAddMenuOpen(false)} className="text-stone-400 hover:text-stone-900">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleAddMenu} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-neutral-700 mb-1">Kategori</label>
+                <label className="block font-semibold text-stone-700 mb-1">Kategori</label>
                 <select
                   value={menuCatId}
                   onChange={e => setMenuCatId(parseInt(e.target.value))}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-3.5 py-2.5 text-xs focus:bg-white"
                 >
                   <option value={1}>Makanan Utama</option>
                   <option value={2}>Minuman Segar</option>
@@ -1347,61 +1358,61 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block font-semibold text-neutral-700 mb-1">Nama Menu</label>
+                <label className="block font-semibold text-stone-700 mb-1">Nama Menu</label>
                 <input
                   type="text"
                   placeholder="Contoh: Nasi Goreng Spesial"
                   value={menuName}
                   onChange={e => setMenuName(e.target.value)}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-3.5 py-2.5 text-xs focus:bg-white"
                   required
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-neutral-700 mb-1">Harga Satuan (Rp)</label>
+                <label className="block font-semibold text-stone-700 mb-1">Harga Satuan (Rp)</label>
                 <input
                   type="number"
                   placeholder="25000"
                   value={menuPrice || ''}
                   onChange={e => setMenuPrice(parseInt(e.target.value) || 0)}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs font-bold"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-3.5 py-2.5 text-xs font-bold focus:bg-white"
                   required
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-neutral-700 mb-1">Deskripsi Singkat</label>
+                <label className="block font-semibold text-stone-700 mb-1">Deskripsi Singkat</label>
                 <textarea
                   placeholder="Keterangan bumbu atau sajian..."
                   value={menuDesc}
                   onChange={e => setMenuDesc(e.target.value)}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs h-16 resize-none"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-3.5 py-2.5 text-xs h-16 resize-none focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-neutral-700 mb-1">URL Foto Menu</label>
+                <label className="block font-semibold text-stone-700 mb-1">URL Foto Menu</label>
                 <input
                   type="url"
                   placeholder="https://..."
                   value={menuImage}
                   onChange={e => setMenuImage(e.target.value)}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-3.5 py-2.5 text-xs focus:bg-white"
                 />
               </div>
 
               <div className="pt-2 flex gap-2">
                 <button
                   type="submit"
-                  className="grow bg-neutral-950 hover:bg-neutral-900 text-white font-semibold py-2.5 rounded-xl text-xs transition"
+                  className="grow bg-stone-900 hover:bg-black text-white font-bold py-3 rounded-2xl text-xs transition"
                 >
                   Simpan Menu
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsAddMenuOpen(false)}
-                  className="px-4 bg-neutral-100 text-neutral-700 font-semibold py-2.5 rounded-xl text-xs hover:bg-neutral-200"
+                  className="px-4 bg-stone-100 text-stone-700 font-bold py-3 rounded-2xl text-xs hover:bg-stone-200"
                 >
                   Batal
                 </button>
@@ -1413,33 +1424,33 @@ export default function AdminPage() {
 
       {/* MODAL TAMBAH PENGELUARAN */}
       {isAddExpenseOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden p-6 space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b border-neutral-100">
-              <h3 className="font-bold text-sm text-neutral-950">Catat Pengeluaran Restoran</h3>
-              <button onClick={() => setIsAddExpenseOpen(false)} className="text-neutral-400 hover:text-neutral-900">
-                <X className="w-4 h-4" />
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden p-6 space-y-4 border border-stone-200">
+            <div className="flex justify-between items-center pb-3 border-b border-stone-100">
+              <h3 className="font-bold text-sm text-stone-900">Catat Pengeluaran Operasional</h3>
+              <button onClick={() => setIsAddExpenseOpen(false)} className="text-stone-400 hover:text-stone-900">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleAddExpense} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-neutral-700 mb-1">Tanggal</label>
+                <label className="block font-semibold text-stone-700 mb-1">Tanggal</label>
                 <input
                   type="date"
                   value={expDate}
                   onChange={e => setExpDate(e.target.value)}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-3.5 py-2.5 text-xs focus:bg-white"
                   required
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-neutral-700 mb-1">Kategori Biaya</label>
+                <label className="block font-semibold text-stone-700 mb-1">Kategori Biaya</label>
                 <select
                   value={expCategory}
                   onChange={e => setExpCategory(e.target.value)}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-3.5 py-2.5 text-xs focus:bg-white"
                 >
                   <option value="Bahan Baku Makanan">Bahan Baku Dapur</option>
                   <option value="Operasional & Utilitas">Operasional & Listrik/Gas</option>
@@ -1450,25 +1461,25 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block font-semibold text-neutral-700 mb-1">Keterangan Biaya</label>
+                <label className="block font-semibold text-stone-700 mb-1">Keterangan Biaya</label>
                 <input
                   type="text"
                   placeholder="Contoh: Belanja beras & bumbu dapur di pasar"
                   value={expDesc}
                   onChange={e => setExpDesc(e.target.value)}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-3.5 py-2.5 text-xs focus:bg-white"
                   required
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-neutral-700 mb-1">Nominal Biaya (Rp)</label>
+                <label className="block font-semibold text-stone-700 mb-1">Nominal Biaya (Rp)</label>
                 <input
                   type="number"
                   placeholder="150000"
                   value={expAmount || ''}
                   onChange={e => setExpAmount(parseInt(e.target.value) || 0)}
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 text-xs font-bold"
+                  className="w-full bg-stone-50 border border-stone-200 rounded-2xl px-3.5 py-2.5 text-xs font-bold focus:bg-white"
                   required
                 />
               </div>
@@ -1476,14 +1487,14 @@ export default function AdminPage() {
               <div className="pt-2 flex gap-2">
                 <button
                   type="submit"
-                  className="grow bg-neutral-950 hover:bg-neutral-900 text-white font-semibold py-2.5 rounded-xl text-xs transition"
+                  className="grow bg-stone-900 hover:bg-black text-white font-bold py-3 rounded-2xl text-xs transition"
                 >
                   Simpan Biaya
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsAddExpenseOpen(false)}
-                  className="px-4 bg-neutral-100 text-neutral-700 font-semibold py-2.5 rounded-xl text-xs hover:bg-neutral-200"
+                  className="px-4 bg-stone-100 text-stone-700 font-bold py-3 rounded-2xl text-xs hover:bg-stone-200"
                 >
                   Batal
                 </button>
