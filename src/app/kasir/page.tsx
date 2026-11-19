@@ -23,7 +23,8 @@ import {
   Lock,
   KeyRound,
   Shield,
-  User as UserIcon
+  User as UserIcon,
+  AlertTriangle
 } from 'lucide-react';
 import { Order, MenuItem, RestaurantTable, OrderItem, PaymentStatus, OrderStatus, User } from '@/types/database';
 import { 
@@ -105,11 +106,38 @@ export default function CashierPage() {
   const [cashGiven, setCashGiven] = useState<number>(0);
   const [settlementMethod, setSettlementMethod] = useState<'Tunai' | 'QRIS' | 'Kartu Debit'>('Tunai');
   const [cashierQrisDataUrl, setCashierQrisDataUrl] = useState<string>('');
+  const [cashierQrisTimeLeft, setCashierQrisTimeLeft] = useState<number>(300);
+  const [isCashierQrisExpired, setIsCashierQrisExpired] = useState<boolean>(false);
+  const [cashierQrisVersion, setCashierQrisVersion] = useState<number>(1);
+
+  // Cashier Timed QRIS Countdown
+  useEffect(() => {
+    if (!orderToPay || settlementMethod !== 'QRIS' || isCashierQrisExpired) return;
+
+    const interval = setInterval(() => {
+      setCashierQrisTimeLeft(prev => {
+        if (prev <= 1) {
+          setIsCashierQrisExpired(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [orderToPay, settlementMethod, isCashierQrisExpired]);
+
+  const handleRegenerateCashierQris = () => {
+    setCashierQrisTimeLeft(300);
+    setIsCashierQrisExpired(false);
+    setCashierQrisVersion(prev => prev + 1);
+  };
 
   // Generate QRIS when Cashier opens QRIS Settlement
   useEffect(() => {
     if (!orderToPay || settlementMethod !== 'QRIS') return;
-    const qrisPayload = `00020101021226670014ID.GO.QRIS.WWW01189360052300000000000215ID1020261118001520458125303360540${orderToPay.total_amount}5802ID5913RASA NUSANTARA6007JAKARTA62070703A016304${orderToPay.order_number}`;
+    const salt = `${Date.now().toString().slice(-4)}${cashierQrisVersion}`;
+    const qrisPayload = `00020101021226670014ID.GO.QRIS.WWW01189360052300000000000215ID1020261118001520458125303360540${orderToPay.total_amount}5802ID5913RASA NUSANTARA6007JAKARTA62070703A016304${orderToPay.order_number}-${salt}`;
     QRCode.toDataURL(qrisPayload, {
       width: 260,
       margin: 1,
@@ -120,7 +148,7 @@ export default function CashierPage() {
     }).then(url => {
       setCashierQrisDataUrl(url);
     }).catch(err => console.error(err));
-  }, [orderToPay, settlementMethod]);
+  }, [orderToPay, settlementMethod, cashierQrisVersion]);
 
   // Digital Clock
   useEffect(() => {
@@ -794,21 +822,60 @@ export default function CashierPage() {
               )}
 
               {settlementMethod === 'QRIS' && (
-                <div className="text-center p-3 bg-white rounded-xl border border-neutral-200">
-                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-100">
+                <div className="text-center p-3 bg-white rounded-xl border border-neutral-200 space-y-2">
+                  <div className="flex items-center justify-between pb-2 border-b border-neutral-100">
                     <span className="font-bold text-xs text-neutral-900 tracking-wider">QRIS STANDAR NASIONAL</span>
                     <span className="text-[10px] font-mono text-neutral-500">NMID: ID1020261118001</span>
                   </div>
-                  <div className="p-2 bg-neutral-50 rounded-lg border border-neutral-200 inline-block mb-2">
+
+                  {/* Countdown Timer Kasir */}
+                  <div className={`p-2 rounded-lg flex items-center justify-between text-xs ${
+                    isCashierQrisExpired 
+                      ? 'bg-rose-50 text-rose-700 border border-rose-200' 
+                      : 'bg-amber-50 text-amber-900 border border-amber-200'
+                  }`}>
+                    <div className="flex items-center gap-1.5 font-semibold text-[11px]">
+                      <Clock className="w-3.5 h-3.5 text-amber-500" />
+                      <span>{isCashierQrisExpired ? 'QRIS Kedaluwarsa' : 'Batas Waktu Scan:'}</span>
+                    </div>
+                    <span className="font-mono font-bold text-xs">
+                      {isCashierQrisExpired 
+                        ? '00:00' 
+                        : `${String(Math.floor(cashierQrisTimeLeft / 60)).padStart(2, '0')}:${String(cashierQrisTimeLeft % 60).padStart(2, '0')}`}
+                    </span>
+                  </div>
+
+                  {/* QR Image with Expired Overlay */}
+                  <div className="relative p-2 bg-neutral-50 rounded-lg border border-neutral-200 inline-block overflow-hidden">
                     {cashierQrisDataUrl ? (
-                      <img src={cashierQrisDataUrl} alt="QRIS Standar Pembayaran" className="w-44 h-44 mx-auto" />
+                      <img 
+                        src={cashierQrisDataUrl} 
+                        alt="QRIS Standar Pembayaran" 
+                        className={`w-44 h-44 mx-auto ${isCashierQrisExpired ? 'filter blur-[3px] opacity-40' : ''}`} 
+                      />
                     ) : (
                       <div className="w-44 h-44 flex items-center justify-center text-xs text-neutral-400">
                         Membuat QRIS...
                       </div>
                     )}
+
+                    {isCashierQrisExpired && (
+                      <div className="absolute inset-0 bg-neutral-950/70 backdrop-blur-xs flex flex-col items-center justify-center p-2 text-white text-center space-y-1.5">
+                        <AlertTriangle className="w-6 h-6 text-rose-400 mx-auto" />
+                        <p className="font-bold text-[11px]">KEDALUWARSA</p>
+                        <button
+                          type="button"
+                          onClick={handleRegenerateCashierQris}
+                          className="bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-2.5 py-1 rounded text-[10px] flex items-center gap-1"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          <span>Generate Baru</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-[11px] font-medium text-neutral-600 mb-1">
+
+                  <p className="text-[11px] font-medium text-neutral-600">
                     Arahkan layar tablet/monitor ke pelanggan untuk scan
                   </p>
                   <p className="text-[10px] text-neutral-400">

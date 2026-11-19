@@ -15,7 +15,10 @@ import {
   QrCode,
   ShieldCheck,
   CheckCircle2,
-  Copy
+  Copy,
+  RefreshCw,
+  AlertTriangle,
+  Timer
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Category, MenuItem, OrderItem, RestaurantTable, Order } from '@/types/database';
@@ -44,10 +47,49 @@ function CustomerOrderContent() {
   const [orderNotes, setOrderNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Active Tracking Order & QRIS Modal
+  // Active Tracking Order & Dynamic Timed QRIS Modal
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [isQrisModalOpen, setIsQrisModalOpen] = useState(false);
   const [qrisDataUrl, setQrisDataUrl] = useState<string>('');
+  const [qrisTimeLeft, setQrisTimeLeft] = useState<number>(300); // 300 detik = 5 menit
+  const [isQrisExpired, setIsQrisExpired] = useState<boolean>(false);
+  const [qrisVersion, setQrisVersion] = useState<number>(1);
+
+  // QRIS Countdown Timer
+  useEffect(() => {
+    if (!isQrisModalOpen || isQrisExpired) return;
+
+    const interval = setInterval(() => {
+      setQrisTimeLeft(prev => {
+        if (prev <= 1) {
+          setIsQrisExpired(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isQrisModalOpen, isQrisExpired]);
+
+  const handleRegenerateQris = () => {
+    setQrisTimeLeft(300);
+    setIsQrisExpired(false);
+    setQrisVersion(prev => prev + 1);
+  };
+
+  const handleOpenQrisModal = () => {
+    if (isQrisExpired || qrisTimeLeft <= 0) {
+      handleRegenerateQris();
+    }
+    setIsQrisModalOpen(true);
+  };
+
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -76,10 +118,11 @@ function CustomerOrderContent() {
     return () => clearInterval(interval);
   }, [activeOrder]);
 
-  // Generate QRIS Data URL when activeOrder or QRIS opens
+  // Generate QRIS Data URL when activeOrder or QRIS opens (dynamic per version)
   useEffect(() => {
     if (!activeOrder) return;
-    const qrisPayload = `00020101021226670014ID.GO.QRIS.WWW01189360052300000000000215ID1020261118001520458125303360540${activeOrder.total_amount}5802ID5913RASA NUSANTARA6007JAKARTA62070703A016304${activeOrder.order_number}`;
+    const dynamicSalt = `${Date.now().toString().slice(-4)}${qrisVersion}`;
+    const qrisPayload = `00020101021226670014ID.GO.QRIS.WWW01189360052300000000000215ID1020261118001520458125303360540${activeOrder.total_amount}5802ID5913RASA NUSANTARA6007JAKARTA62070703A016304${activeOrder.order_number}-${dynamicSalt}`;
     
     QRCode.toDataURL(qrisPayload, {
       width: 280,
@@ -91,7 +134,7 @@ function CustomerOrderContent() {
     }).then(url => {
       setQrisDataUrl(url);
     }).catch(err => console.error(err));
-  }, [activeOrder]);
+  }, [activeOrder, qrisVersion]);
 
   const totalCartQty = cart.reduce((sum, item) => sum + item.qty, 0);
   const totalCartPrice = cart.reduce((sum, item) => sum + item.subtotal, 0);
@@ -167,8 +210,9 @@ function CustomerOrderContent() {
         setCart([]);
         setIsCartOpen(false);
 
-        // Jika metode pembayaran QRIS, langsung tampilkan modal QRIS
+        // Jika metode pembayaran QRIS, langsung jalankan timer 5 menit dan buka modal
         if (paymentMethod === 'QRIS') {
+          handleRegenerateQris();
           setIsQrisModalOpen(true);
         }
       } else {
@@ -248,11 +292,11 @@ function CustomerOrderContent() {
                   </span>
                 ) : (
                   <button
-                    onClick={() => setIsQrisModalOpen(true)}
-                    className="text-[11px] font-bold px-2.5 py-1 rounded-md bg-neutral-950 text-white flex items-center gap-1 hover:bg-neutral-800 transition"
+                    onClick={handleOpenQrisModal}
+                    className="text-[11px] font-bold px-3 py-1.5 rounded-lg bg-neutral-950 text-white flex items-center gap-1.5 hover:bg-neutral-800 transition shadow-sm"
                   >
-                    <QrCode className="w-3 h-3 text-amber-400" />
-                    <span>Bayar via QRIS</span>
+                    <QrCode className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Bayar QRIS ({isQrisExpired ? 'Expired' : formatTimer(qrisTimeLeft)})</span>
                   </button>
                 )}
               </div>
@@ -508,6 +552,11 @@ function CustomerOrderContent() {
                     <span className="text-[10px] opacity-75 block mt-0.5">Selesai Makan</span>
                   </button>
                 </div>
+                {paymentMethod === 'QRIS' && (
+                  <p className="text-[11px] text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200 mt-2 font-medium">
+                    ⚡ Kode QRIS Dinamis berwaktu (5 menit) akan otomatis muncul di layar setelah Anda membuat pesanan.
+                  </p>
+                )}
               </div>
 
               <div className="pt-2 border-t border-neutral-200 flex justify-between items-baseline text-xs">
@@ -522,84 +571,154 @@ function CustomerOrderContent() {
                 onClick={handleSubmitOrder}
                 className="w-full bg-neutral-950 hover:bg-neutral-900 text-white py-3 rounded-xl text-xs font-semibold transition disabled:opacity-50"
               >
-                {isSubmitting ? 'Mengirim Pesanan...' : 'Kirim Pesanan ke Dapur'}
+                {isSubmitting 
+                  ? 'Membuat Pesanan...' 
+                  : paymentMethod === 'QRIS' 
+                  ? 'Buat Pesanan & Bayar QRIS (5 Menit)' 
+                  : 'Kirim Pesanan ke Dapur'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* POP-UP MODAL QRIS PEMBAYARAN */}
+      {/* POP-UP MODAL QRIS PEMBAYARAN BERWAKTU (DYNAMIC TIMED QRIS) */}
       {isQrisModalOpen && activeOrder && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden border border-neutral-200 flex flex-col">
+          <div className="bg-white rounded-3xl max-w-sm w-full shadow-2xl overflow-hidden border border-neutral-200 flex flex-col">
             
             {/* Header QRIS Resmi */}
             <div className="p-4 bg-neutral-950 text-white flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-7 h-7 bg-red-600 rounded flex items-center justify-center font-bold text-[11px] text-white tracking-tighter">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center font-bold text-xs text-white tracking-tighter shadow-sm">
                   QRIS
                 </div>
                 <div>
                   <h3 className="font-bold text-xs uppercase tracking-wider text-white">Pembayaran QRIS</h3>
-                  <p className="text-[10px] text-neutral-400">Standar Pembayaran Nasional</p>
+                  <p className="text-[10px] text-neutral-400">Standar Pembayaran Nasional (NMID: ID1020261118001)</p>
                 </div>
               </div>
-              <button onClick={() => setIsQrisModalOpen(false)} className="text-neutral-400 hover:text-white">
+              <button 
+                onClick={() => setIsQrisModalOpen(false)} 
+                className="text-neutral-400 hover:text-white p-1 rounded-lg hover:bg-neutral-800 transition"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
+            {/* Countdown Timer Header Bar */}
+            <div className={`px-4 py-2.5 border-b text-xs flex items-center justify-between transition ${
+              isQrisExpired 
+                ? 'bg-rose-50 border-rose-200 text-rose-700' 
+                : qrisTimeLeft <= 60 
+                ? 'bg-amber-50 border-amber-200 text-amber-800' 
+                : 'bg-neutral-50 border-neutral-200 text-neutral-700'
+            }`}>
+              <div className="flex items-center gap-1.5 font-semibold">
+                <Clock className={`w-3.5 h-3.5 ${isQrisExpired ? 'text-rose-600 animate-pulse' : 'text-amber-500'}`} />
+                <span>{isQrisExpired ? 'QRIS Kedaluwarsa' : 'Selesaikan Pembayaran:'}</span>
+              </div>
+              <span className={`font-mono text-sm font-black px-2 py-0.5 rounded-md ${
+                isQrisExpired 
+                  ? 'bg-rose-200/60 text-rose-800' 
+                  : qrisTimeLeft <= 60
+                  ? 'bg-amber-200/80 text-amber-900 animate-pulse'
+                  : 'bg-neutral-200 text-neutral-900'
+              }`}>
+                {isQrisExpired ? '00:00' : formatTimer(qrisTimeLeft)}
+              </span>
+            </div>
+
+            {/* Visual Progress Bar Timer */}
+            {!isQrisExpired && (
+              <div className="w-full bg-neutral-100 h-1">
+                <div 
+                  className={`h-1 transition-all duration-1000 ${
+                    qrisTimeLeft <= 60 ? 'bg-rose-500' : 'bg-amber-500'
+                  }`}
+                  style={{ width: `${Math.max(0, Math.min(100, (qrisTimeLeft / 300) * 100))}%` }}
+                />
+              </div>
+            )}
+
             {/* Body QRIS Card */}
             <div className="p-5 flex flex-col items-center text-center space-y-3 bg-neutral-50/50">
-              <div>
-                <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">Merchant Restoran</span>
-                <h4 className="font-bold text-sm text-neutral-950">RASA NUSANTARA DINING</h4>
-                <p className="text-[10px] font-mono text-neutral-500">NMID: ID1020261118001</p>
-              </div>
-
-              {/* QR Image */}
-              <div className="bg-white p-3 rounded-xl border border-neutral-200 shadow-sm inline-block">
+              
+              {/* QR Image Container with Expired Overlay */}
+              <div className="relative bg-white p-3 rounded-2xl border border-neutral-200 shadow-sm inline-block overflow-hidden">
                 {qrisDataUrl ? (
-                  <img src={qrisDataUrl} alt="QRIS Code" className="w-48 h-48 mx-auto" />
+                  <img 
+                    src={qrisDataUrl} 
+                    alt="QRIS Code Dinamis" 
+                    className={`w-48 h-48 mx-auto transition ${isQrisExpired ? 'filter blur-[3px] opacity-40' : ''}`} 
+                  />
                 ) : (
                   <div className="w-48 h-48 flex items-center justify-center text-xs text-neutral-400">
                     Memuat QRIS...
                   </div>
                 )}
+
+                {/* Expired Overlay when Timer hits 0 */}
+                {isQrisExpired && (
+                  <div className="absolute inset-0 bg-neutral-950/70 backdrop-blur-xs flex flex-col items-center justify-center p-3 text-white text-center space-y-2">
+                    <AlertTriangle className="w-8 h-8 text-rose-400 mx-auto" />
+                    <p className="font-bold text-xs">QRIS KEDALUWARSA</p>
+                    <p className="text-[10px] text-neutral-300 leading-tight">Waktu pembayaran 5 menit telah habis demi keamanan.</p>
+                    <button
+                      onClick={handleRegenerateQris}
+                      className="mt-1 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-md transition"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Buat QRIS Baru</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Total Tagihan Box */}
-              <div className="w-full bg-white p-3 rounded-xl border border-neutral-200 space-y-1">
-                <span className="text-[10px] uppercase font-semibold text-neutral-500">Total Tagihan Yang Harus Dibayar</span>
-                <p className="text-lg font-black text-neutral-950">{formatRupiah(activeOrder.total_amount)}</p>
-                <p className="text-[10px] font-mono text-neutral-400">Order: {activeOrder.order_number}</p>
+              <div className="w-full bg-white p-3.5 rounded-2xl border border-neutral-200 space-y-1 shadow-xs">
+                <span className="text-[10px] uppercase font-semibold text-neutral-400 tracking-wider">Total Tagihan Yang Harus Dibayar</span>
+                <p className="text-xl font-black text-neutral-950">{formatRupiah(activeOrder.total_amount)}</p>
+                <div className="flex justify-between items-center text-[10px] text-neutral-500 pt-1 border-t border-neutral-100 mt-1">
+                  <span>No. Order: <strong>{activeOrder.order_number}</strong></span>
+                  <span>Meja: <strong>{activeOrder.table_number || 'Takeaway'}</strong></span>
+                </div>
               </div>
 
               {/* Supported Apps Badges */}
-              <div className="w-full text-left bg-neutral-100/80 p-2.5 rounded-lg border border-neutral-200 text-[10px] text-neutral-600 space-y-1">
+              <div className="w-full text-left bg-neutral-100 p-2.5 rounded-xl border border-neutral-200 text-[10px] text-neutral-600 space-y-1">
                 <p className="font-semibold text-neutral-800 flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Dapat di-scan dengan aplikasi apapun:</span>
+                  <span>Dukungan Aplikasi Pembayaran:</span>
                 </p>
-                <p className="text-neutral-500 leading-relaxed">
-                  GoPay, OVO, DANA, ShopeePay, BCA Mobile, Livin by Mandiri, BRImo, BNI, LinkAja.
+                <p className="text-neutral-500 leading-relaxed text-[10px]">
+                  BCA Mobile, Livin by Mandiri, GoPay, OVO, DANA, ShopeePay, BRImo, BNI Mobile, LinkAja.
                 </p>
               </div>
             </div>
 
             {/* Actions */}
             <div className="p-3 bg-white border-t border-neutral-200 flex gap-2">
-              <button
-                onClick={handleConfirmQrisPaid}
-                className="grow bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Saya Sudah Membayar</span>
-              </button>
+              {isQrisExpired ? (
+                <button
+                  onClick={handleRegenerateQris}
+                  className="grow bg-neutral-950 hover:bg-neutral-900 text-white font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition"
+                >
+                  <RefreshCw className="w-4 h-4 text-amber-400" />
+                  <span>Perbarui QRIS (Kode Baru)</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleConfirmQrisPaid}
+                  className="grow bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-sm"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Saya Sudah Membayar</span>
+                </button>
+              )}
               <button
                 onClick={() => setIsQrisModalOpen(false)}
-                className="px-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold py-2.5 rounded-xl text-xs transition"
+                className="px-4 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-semibold py-2.5 rounded-xl text-xs transition"
               >
                 Tutup
               </button>
