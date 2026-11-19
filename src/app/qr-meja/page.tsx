@@ -144,10 +144,21 @@ export default function TableQRGeneratorPage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 pt-2 border-t border-neutral-100 text-[11px] text-neutral-500">
-            <span>URL Terpasang di QR:</span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-2 border-t border-neutral-100 text-[11px] text-neutral-600">
+            <span className="font-semibold shrink-0">Custom Domain / Vercel:</span>
+            <input
+              type="text"
+              value={baseUrl}
+              onChange={e => setBaseUrl(e.target.value)}
+              placeholder="Contoh: https://resto-qr.vercel.app/?meja="
+              className="bg-neutral-50 border border-neutral-200 rounded-lg px-2.5 py-1 text-xs font-mono text-neutral-900 grow focus:bg-white"
+            />
+          </div>
+
+          <div className="flex items-center space-x-2 text-[11px] text-neutral-500">
+            <span>Contoh URL QR Meja 05:</span>
             <code className="bg-neutral-100 text-neutral-900 font-mono px-2 py-0.5 rounded font-semibold grow truncate">
-              {baseUrl}X
+              {baseUrl}5
             </code>
           </div>
         </div>
