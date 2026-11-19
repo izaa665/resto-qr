@@ -20,8 +20,8 @@ export default function TableQRGeneratorPage() {
   
   // Deteksi host aktif
   const localWifiIp = '10.49.165.23';
-  const onlineTunnelUrl = 'https://resto-qr-klir.loca.lt/?meja=';
-  const [baseUrl, setBaseUrl] = useState(`http://${localWifiIp}:3000/?meja=`);
+  const vercelLiveUrl = 'https://resto-next-sepia.vercel.app/?meja=';
+  const [baseUrl, setBaseUrl] = useState(vercelLiveUrl);
 
   useEffect(() => {
     async function load() {
@@ -118,15 +118,15 @@ export default function TableQRGeneratorPage() {
 
               <button
                 type="button"
-                onClick={() => setBaseUrl(onlineTunnelUrl)}
+                onClick={() => setBaseUrl(vercelLiveUrl)}
                 className={`px-3 py-1.5 rounded-lg border flex items-center gap-1.5 font-semibold transition ${
-                  baseUrl.includes('loca.lt')
+                  baseUrl.includes('vercel.app')
                     ? 'bg-neutral-950 text-white border-neutral-950'
                     : 'bg-neutral-50 text-neutral-700 border-neutral-200 hover:bg-neutral-100'
                 }`}
               >
                 <Globe className="w-3.5 h-3.5" />
-                <span>Online Publik HTTPS (Bisa Paket Data 4G/5G)</span>
+                <span>Online Vercel Live (Paket Data 4G/5G)</span>
               </button>
 
               <button
