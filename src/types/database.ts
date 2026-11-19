@@ -9,8 +9,11 @@ export type UserRole = 'admin' | 'kasir' | 'dapur';
 export interface User {
   id: number;
   name: string;
+  username: string;
+  pin?: string;
   role: UserRole;
-  email: string;
+  email?: string;
+  is_active?: boolean;
 }
 
 export interface Category {
@@ -61,6 +64,7 @@ export interface Order {
   payment_status: PaymentStatus;
   order_status: OrderStatus;
   notes?: string;
+  cashier_name?: string;
   created_at: string;
   items?: OrderItem[];
 }

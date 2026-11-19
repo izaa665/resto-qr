@@ -17,15 +17,22 @@ import {
   Search,
   X,
   QrCode,
-  ShieldCheck
+  ShieldCheck,
+  UserCheck,
+  LogOut,
+  Lock,
+  KeyRound,
+  Shield,
+  User as UserIcon
 } from 'lucide-react';
-import { Order, MenuItem, RestaurantTable, OrderItem, PaymentStatus, OrderStatus } from '@/types/database';
+import { Order, MenuItem, RestaurantTable, OrderItem, PaymentStatus, OrderStatus, User } from '@/types/database';
 import { 
   fetchOrders, 
   updateOrderStatus, 
   fetchMenus, 
   fetchTables, 
   createOrder, 
+  fetchUsers,
   isSupabaseConfigured, 
   supabase 
 } from '@/lib/supabase';
@@ -35,10 +42,54 @@ export default function CashierPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [tables, setTables] = useState<RestaurantTable[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [activeCashier, setActiveCashier] = useState<User | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [cashierPin, setCashierPin] = useState<string>('');
+  const [loginError, setLoginError] = useState<string>('');
+  const [isAuthLoaded, setIsAuthLoaded] = useState<boolean>(false);
+
   const [filter, setFilter] = useState<'active' | 'unpaid' | 'paid' | 'all'>('active');
   const [selectedOrderForReceipt, setSelectedOrderForReceipt] = useState<Order | null>(null);
   const [currentTime, setCurrentTime] = useState('');
   const [previousPendingCount, setPreviousPendingCount] = useState<number>(0);
+
+  // Check saved cashier shift
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('klir_active_kasir');
+      if (saved) {
+        setActiveCashier(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setIsAuthLoaded(true);
+  }, []);
+
+  const handleCashierLogin = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setLoginError('');
+    const user = users.find(u => u.id === selectedUserId);
+    if (!user) {
+      setLoginError('Pilih akun kasir terlebih dahulu.');
+      return;
+    }
+    if (user.pin && user.pin !== cashierPin) {
+      setLoginError('PIN kasir tidak sesuai. Silakan coba lagi.');
+      return;
+    }
+    setActiveCashier(user);
+    localStorage.setItem('klir_active_kasir', JSON.stringify(user));
+    setCashierPin('');
+  };
+
+  const handleCashierLogout = () => {
+    if (confirm(`Tutup sesi shift ${activeCashier?.name || 'Kasir'} dan ganti pengguna?`)) {
+      setActiveCashier(null);
+      localStorage.removeItem('klir_active_kasir');
+    }
+  };
 
   // New POS Order Modal
   const [isPosModalOpen, setIsPosModalOpen] = useState(false);
@@ -81,14 +132,21 @@ export default function CashierPage() {
   }, []);
 
   const loadAll = async () => {
-    const [ord, mn, tbl] = await Promise.all([
+    const [ord, mn, tbl, usr] = await Promise.all([
       fetchOrders(),
       fetchMenus(),
-      fetchTables()
+      fetchTables(),
+      fetchUsers()
     ]);
     setOrders(ord);
     setMenus(mn);
     setTables(tbl);
+    setUsers(usr);
+
+    if (!selectedUserId && usr.length > 0) {
+      const defaultUser = usr.find(u => u.role === 'kasir') || usr[0];
+      if (defaultUser) setSelectedUserId(defaultUser.id);
+    }
 
     const pendingCount = ord.filter(o => o.order_status === 'pending').length;
     if (pendingCount > previousPendingCount && previousPendingCount >= 0) {
@@ -121,9 +179,9 @@ export default function CashierPage() {
 
   const handleUpdateStatus = async (
     orderId: number,
-    updates: { order_status?: OrderStatus; payment_status?: PaymentStatus }
+    updates: { order_status?: OrderStatus; payment_status?: PaymentStatus; payment_method?: string; cashier_name?: string }
   ) => {
-    await updateOrderStatus(orderId, { ...updates, changed_by: 'Kasir' });
+    await updateOrderStatus(orderId, { ...updates, changed_by: activeCashier ? activeCashier.name : 'Kasir' });
     loadAll();
   };
 
@@ -162,6 +220,7 @@ export default function CashierPage() {
       order_type: posOrderType,
       table_number: posOrderType === 'takeaway' ? null : posTableNumber,
       customer_name: posCustomerName.trim() || 'Pelanggan POS',
+      cashier_name: activeCashier ? activeCashier.name : 'Kasir',
       total_amount: total,
       payment_method: 'Tunai',
       payment_status: payDirectly ? 'paid' : 'unpaid',
@@ -190,6 +249,142 @@ export default function CashierPage() {
   const activeOrdersCount = orders.filter(o => o.order_status !== 'completed' && o.order_status !== 'cancelled').length;
   const totalSalesToday = orders.filter(o => o.payment_status === 'paid').reduce((s, o) => s + o.total_amount, 0);
 
+  // Cashier Login Screen if not logged in
+  if (isAuthLoaded && !activeCashier) {
+    const cashierUsers = users.filter(u => u.is_active !== false && (u.role === 'kasir' || u.role === 'admin'));
+    const selectedUserObj = users.find(u => u.id === selectedUserId);
+
+    return (
+      <div className="bg-neutral-900 min-h-screen text-neutral-100 font-sans flex flex-col justify-center items-center p-4">
+        <div className="max-w-md w-full bg-neutral-950 border border-neutral-800 rounded-3xl p-6 shadow-2xl space-y-6">
+          <div className="text-center space-y-1.5">
+            <div className="w-12 h-12 bg-neutral-800 border border-neutral-700 rounded-2xl mx-auto flex items-center justify-center text-amber-400 mb-2">
+              <Lock className="w-6 h-6" />
+            </div>
+            <h1 className="text-lg font-bold tracking-tight text-white uppercase">Terminal Kasir POS</h1>
+            <p className="text-xs text-neutral-400">Pilih staf kasir yang bertugas dan masukkan PIN 4 digit untuk membuka shift.</p>
+          </div>
+
+          {/* Cashier Account Selection */}
+          <div className="space-y-2">
+            <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider block">Pilih Akun Kasir</label>
+            <div className="grid grid-cols-2 gap-2">
+              {cashierUsers.map(user => {
+                const isSelected = selectedUserId === user.id;
+                return (
+                  <button
+                    key={user.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedUserId(user.id);
+                      setCashierPin('');
+                      setLoginError('');
+                    }}
+                    className={`p-3 rounded-xl border text-left transition flex flex-col justify-between ${
+                      isSelected 
+                        ? 'border-amber-500 bg-amber-500/10 text-white ring-1 ring-amber-500' 
+                        : 'border-neutral-800 bg-neutral-900/60 text-neutral-300 hover:border-neutral-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="w-7 h-7 rounded-lg bg-neutral-800 flex items-center justify-center text-xs font-bold text-neutral-200">
+                        {user.name.charAt(0)}
+                      </div>
+                      {isSelected && <Check className="w-4 h-4 text-amber-400" />}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold truncate">{user.name}</p>
+                      <p className="text-[10px] text-neutral-400 uppercase">{user.role}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* PIN Input & Form */}
+          <form onSubmit={handleCashierLogin} className="space-y-4">
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">PIN Masuk</label>
+                {selectedUserObj && (
+                  <span className="text-[10px] text-neutral-500">
+                    Kasir: <strong className="text-neutral-300">{selectedUserObj.name}</strong>
+                  </span>
+                )}
+              </div>
+              <input
+                type="password"
+                maxLength={6}
+                value={cashierPin}
+                onChange={e => {
+                  setCashierPin(e.target.value);
+                  setLoginError('');
+                }}
+                placeholder="Masukkan 4-digit PIN..."
+                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-center tracking-[0.5em] text-lg font-bold text-white focus:outline-none focus:border-amber-500 transition"
+              />
+            </div>
+
+            {/* Quick Numpad for Touchscreen / Fast Access */}
+            <div className="grid grid-cols-3 gap-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => setCashierPin(prev => (prev.length < 6 ? prev + num : prev))}
+                  className="py-2.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-bold text-neutral-200 transition"
+                >
+                  {num}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setCashierPin('')}
+                className="py-2.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-xs font-bold text-neutral-400 transition"
+              >
+                C
+              </button>
+              <button
+                type="button"
+                onClick={() => setCashierPin(prev => (prev.length < 6 ? prev + '0' : prev))}
+                className="py-2.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-bold text-neutral-200 transition"
+              >
+                0
+              </button>
+              <button
+                type="button"
+                onClick={() => setCashierPin(prev => prev.slice(0, -1))}
+                className="py-2.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-xs font-bold text-neutral-400 transition"
+              >
+                ⌫
+              </button>
+            </div>
+
+            {loginError && (
+              <div className="p-2.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-center text-xs text-rose-400">
+                {loginError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-amber-500/20"
+            >
+              Buka Shift Kasir
+            </button>
+          </form>
+
+          <div className="pt-2 border-t border-neutral-800 text-center">
+            <p className="text-[11px] text-neutral-500">
+              Akun & PIN staf kasir dikelola secara terpusat oleh Admin.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-neutral-100 min-h-screen text-neutral-900 font-sans selection:bg-neutral-900 selection:text-white">
       
@@ -197,19 +392,17 @@ export default function CashierPage() {
       <header className="bg-white border-b border-neutral-200 sticky top-0 z-30 px-4 sm:px-6 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Link href="/" className="w-8 h-8 rounded-lg bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-neutral-600 transition">
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="font-bold text-sm tracking-tight text-neutral-950 uppercase">
                   Point of Sale (POS)
                 </h1>
-                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                  Kasir 1
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Kasir: {activeCashier?.name || 'Kasir Bertugas'}
                 </span>
               </div>
-              <p className="text-[11px] text-neutral-500">Rasa Nusantara Dining</p>
+              <p className="text-[11px] text-neutral-500">Shift Pelayanan Aktif</p>
             </div>
           </div>
 
@@ -222,12 +415,14 @@ export default function CashierPage() {
               <span>Input Pesanan Baru</span>
             </button>
 
-            <Link
-              href="/admin"
-              className="bg-neutral-100 hover:bg-neutral-200 text-neutral-800 px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+            <button
+              onClick={handleCashierLogout}
+              className="bg-neutral-100 hover:bg-rose-50 hover:text-rose-600 text-neutral-700 border border-neutral-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+              title="Tutup shift dan ganti staf kasir"
             >
-              Backoffice
-            </Link>
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Tutup Shift</span>
+            </button>
 
             <div className="text-right pl-3 border-l border-neutral-200 hidden sm:block">
               <span className="font-mono text-xs font-bold text-neutral-800">{currentTime || '--:--:--'}</span>
@@ -634,8 +829,17 @@ export default function CashierPage() {
             <div className="flex gap-2">
               <button
                 onClick={async () => {
-                  await handleUpdateStatus(orderToPay.id, { payment_status: 'paid' });
-                  setSelectedOrderForReceipt({ ...orderToPay, payment_status: 'paid', payment_method: settlementMethod });
+                  await handleUpdateStatus(orderToPay.id, { 
+                    payment_status: 'paid',
+                    payment_method: settlementMethod,
+                    cashier_name: activeCashier ? activeCashier.name : 'Kasir'
+                  });
+                  setSelectedOrderForReceipt({ 
+                    ...orderToPay, 
+                    payment_status: 'paid', 
+                    payment_method: settlementMethod,
+                    cashier_name: activeCashier ? activeCashier.name : 'Kasir'
+                  });
                   setOrderToPay(null);
                 }}
                 className="grow bg-neutral-950 hover:bg-neutral-900 text-white font-semibold py-2 rounded-lg text-xs transition"
@@ -675,7 +879,7 @@ export default function CashierPage() {
                   </div>
                   <div className="flex justify-between font-bold">
                     <span>{selectedOrderForReceipt.order_type === 'takeaway' ? 'TAKEAWAY' : `MEJA ${selectedOrderForReceipt.table_number}`}</span>
-                    <span>Kasir 1</span>
+                    <span>Kasir: {selectedOrderForReceipt.cashier_name || activeCashier?.name || 'Kasir'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Pelanggan: {selectedOrderForReceipt.customer_name}</span>

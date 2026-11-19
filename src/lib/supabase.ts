@@ -171,9 +171,10 @@ export const initialOrders: Order[] = [
 ];
 
 export const initialUsers: User[] = [
-  { id: 1, name: 'Budi Owner', email: 'owner@resto.com', role: 'admin' },
-  { id: 2, name: 'Rina Kasir', email: 'kasir@resto.com', role: 'kasir' },
-  { id: 3, name: 'Chef Joko', email: 'dapur@resto.com', role: 'dapur' }
+  { id: 1, name: 'Budi (Admin Owner)', username: 'admin', pin: '1234', email: 'owner@resto.com', role: 'admin', is_active: true },
+  { id: 2, name: 'Rina (Kasir Shift Pagi)', username: 'rina', pin: '1111', email: 'rina@resto.com', role: 'kasir', is_active: true },
+  { id: 3, name: 'Doni (Kasir Shift Sore)', username: 'doni', pin: '2222', email: 'doni@resto.com', role: 'kasir', is_active: true },
+  { id: 4, name: 'Chef Joko (Dapur)', username: 'joko', pin: '3333', email: 'dapur@resto.com', role: 'dapur', is_active: true }
 ];
 
 export const initialSetting: RestaurantSetting = {
@@ -271,6 +272,7 @@ export async function createOrder(orderData: {
   order_type: OrderType;
   table_number?: number | null;
   customer_name: string;
+  cashier_name?: string;
   total_amount: number;
   payment_method: string;
   payment_status?: PaymentStatus;
@@ -291,6 +293,7 @@ export async function createOrder(orderData: {
         order_type: orderType,
         table_number: orderType === 'takeaway' ? null : orderData.table_number,
         customer_name: orderData.customer_name,
+        cashier_name: orderData.cashier_name || '',
         total_amount: orderData.total_amount,
         payment_method: orderData.payment_method,
         payment_status: payStatus,
@@ -319,7 +322,7 @@ export async function createOrder(orderData: {
       order_id: order.id,
       status_from: null,
       status_to: ordStatus,
-      changed_by: orderType === 'takeaway' ? 'Kasir POS' : 'Pelanggan Meja'
+      changed_by: orderData.cashier_name || (orderType === 'takeaway' ? 'Kasir POS' : 'Pelanggan Meja')
     });
 
     return { success: true, order: { ...order, items: orderData.items } };
@@ -333,6 +336,7 @@ export async function createOrder(orderData: {
     order_type: orderType,
     table_number: orderType === 'takeaway' ? null : orderData.table_number,
     customer_name: orderData.customer_name,
+    cashier_name: orderData.cashier_name || '',
     total_amount: orderData.total_amount,
     payment_method: orderData.payment_method,
     payment_status: payStatus,
@@ -348,7 +352,13 @@ export async function createOrder(orderData: {
 
 export async function updateOrderStatus(
   orderId: number, 
-  updates: { order_status?: OrderStatus; payment_status?: PaymentStatus; changed_by?: string }
+  updates: { 
+    order_status?: OrderStatus; 
+    payment_status?: PaymentStatus; 
+    payment_method?: string;
+    cashier_name?: string;
+    changed_by?: string;
+  }
 ): Promise<boolean> {
   const { changed_by, ...dbUpdates } = updates;
 
@@ -426,8 +436,80 @@ export async function createMenuItem(menu: Omit<MenuItem, 'id'>): Promise<boolea
 
 export async function fetchUsers(): Promise<User[]> {
   if (isSupabaseConfigured && supabase) {
-    const { data } = await supabase.from('users').select('*');
+    const { data } = await supabase.from('users').select('*').order('id', { ascending: true });
     if (data && data.length > 0) return data;
   }
   return getLocalData<User[]>(STORAGE_KEYS.USERS, initialUsers);
+}
+
+export async function createUser(user: Omit<User, 'id'>): Promise<User> {
+  const newUser: User = {
+    ...user,
+    id: Date.now(),
+    is_active: user.is_active !== undefined ? user.is_active : true
+  };
+
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase.from('users').insert([newUser]).select();
+    if (!error && data && data[0]) return data[0];
+  }
+
+  const current = getLocalData<User[]>(STORAGE_KEYS.USERS, initialUsers);
+  setLocalData(STORAGE_KEYS.USERS, [...current, newUser]);
+  return newUser;
+}
+
+export async function updateUser(id: number, updates: Partial<User>): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from('users').update(updates).eq('id', id);
+    if (!error) return true;
+  }
+
+  const current = getLocalData<User[]>(STORAGE_KEYS.USERS, initialUsers);
+  const updated = current.map(u => u.id === id ? { ...u, ...updates } : u);
+  setLocalData(STORAGE_KEYS.USERS, updated);
+  return true;
+}
+
+export async function deleteUser(id: number): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from('users').delete().eq('id', id);
+    if (!error) return true;
+  }
+
+  const current = getLocalData<User[]>(STORAGE_KEYS.USERS, initialUsers);
+  const updated = current.filter(u => u.id !== id);
+  setLocalData(STORAGE_KEYS.USERS, updated);
+  return true;
+}
+
+export async function deleteMenuItem(id: number): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from('menus').delete().eq('id', id);
+    if (!error) return true;
+  }
+
+  const current = getLocalData<MenuItem[]>(STORAGE_KEYS.MENUS, initialMenus);
+  setLocalData(STORAGE_KEYS.MENUS, current.filter(m => m.id !== id));
+  return true;
+}
+
+export async function fetchSetting(): Promise<RestaurantSetting> {
+  if (isSupabaseConfigured && supabase) {
+    const { data } = await supabase.from('restaurant_settings').select('*').limit(1).single();
+    if (data) return data;
+  }
+  return getLocalData<RestaurantSetting>(STORAGE_KEYS.SETTING, initialSetting);
+}
+
+export async function updateSetting(updates: Partial<RestaurantSetting>): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from('restaurant_settings').update(updates).eq('id', 1);
+    if (!error) return true;
+  }
+
+  const current = getLocalData<RestaurantSetting>(STORAGE_KEYS.SETTING, initialSetting);
+  const updated = { ...current, ...updates };
+  setLocalData(STORAGE_KEYS.SETTING, updated);
+  return true;
 }
