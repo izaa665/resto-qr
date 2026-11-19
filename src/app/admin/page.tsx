@@ -9,7 +9,6 @@ import {
   QrCode, 
   Receipt, 
   Wallet, 
-  Settings, 
   Plus, 
   Trash2, 
   Printer, 
@@ -28,7 +27,9 @@ import {
   Menu as MenuIcon,
   ChevronRight,
   FileSpreadsheet,
-  Download
+  Download,
+  LogOut,
+  Lock
 } from 'lucide-react';
 import { Expense, MenuItem, Order, User, RestaurantTable, RestaurantSetting } from '@/types/database';
 import { 
@@ -46,13 +47,21 @@ import {
   deleteUser,
   fetchTables,
   fetchSetting,
-  updateSetting
+  supabase,
+  isSupabaseConfigured
 } from '@/lib/supabase';
 import { formatRupiah } from '@/lib/utils';
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'menus' | 'tables' | 'orders' | 'expenses' | 'settings'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'menus' | 'tables' | 'orders' | 'expenses'>('analytics');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Admin Auth states
+  const [activeAdmin, setActiveAdmin] = useState<User | null>(null);
+  const [selectedAdminId, setSelectedAdminId] = useState<number | null>(null);
+  const [adminPin, setAdminPin] = useState<string>('');
+  const [loginError, setLoginError] = useState<string>('');
+  const [isAuthLoaded, setIsAuthLoaded] = useState<boolean>(false);
 
   // Data states
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -88,15 +97,18 @@ export default function AdminPage() {
   const [expDesc, setExpDesc] = useState('');
   const [expAmount, setExpAmount] = useState<number>(0);
 
-  // Settings Form
-  const [settingName, setSettingName] = useState('');
-  const [settingAddress, setSettingAddress] = useState('');
-  const [settingPhone, setSettingPhone] = useState('');
-  const [settingWifi, setSettingWifi] = useState('');
-  const [settingTax, setSettingTax] = useState<number>(0);
-  const [settingService, setSettingService] = useState<number>(0);
-  const [settingFooter, setSettingFooter] = useState('');
-  const [settingSavedNotice, setSettingSavedNotice] = useState(false);
+  // Session verification on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('klir_active_admin');
+      if (saved) {
+        setActiveAdmin(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setIsAuthLoaded(true);
+  }, []);
 
   const loadAllData = async () => {
     const [exp, mn, ord, usr, tbl, st] = await Promise.all([
@@ -114,14 +126,33 @@ export default function AdminPage() {
     setTables(tbl);
     setSetting(st);
 
-    if (st) {
-      setSettingName(st.name);
-      setSettingAddress(st.address);
-      setSettingPhone(st.phone);
-      setSettingWifi(st.wifi_password);
-      setSettingTax(st.tax_percent);
-      setSettingService(st.service_percent || 0);
-      setSettingFooter(st.receipt_footer || 'Terima kasih atas kunjungan Anda!');
+    if (!selectedAdminId && usr.length > 0) {
+      const defaultAdmin = usr.find(u => u.role === 'admin') || usr[0];
+      if (defaultAdmin) setSelectedAdminId(defaultAdmin.id);
+    }
+  };
+
+  const handleAdminLogin = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setLoginError('');
+    const targetUser = users.find(u => u.id === selectedAdminId) || users.find(u => u.role === 'admin');
+    if (!targetUser) {
+      setLoginError('Pilih akun administrator terlebih dahulu.');
+      return;
+    }
+    if (targetUser.pin && targetUser.pin !== adminPin) {
+      setLoginError('PIN Admin tidak sesuai. Silakan coba lagi.');
+      return;
+    }
+    setActiveAdmin(targetUser);
+    localStorage.setItem('klir_active_admin', JSON.stringify(targetUser));
+    setAdminPin('');
+  };
+
+  const handleAdminLogout = () => {
+    if (confirm('Keluar dari sesi Administrator Backoffice?')) {
+      setActiveAdmin(null);
+      localStorage.removeItem('klir_active_admin');
     }
   };
 
@@ -142,8 +173,28 @@ export default function AdminPage() {
     document.body.removeChild(link);
   };
 
+  // Full Realtime listener across all tables
   useEffect(() => {
     loadAllData();
+
+    if (isSupabaseConfigured && supabase) {
+      const channel = supabase
+        .channel('admin-realtime-all')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadAllData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => loadAllData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'menus' }, () => loadAllData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => loadAllData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurant_tables' }, () => loadAllData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'waiter_calls' }, () => loadAllData())
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } else {
+      const interval = setInterval(loadAllData, 3000);
+      return () => clearInterval(interval);
+    }
   }, []);
 
   // Financial Calculations
@@ -301,24 +352,8 @@ export default function AdminPage() {
     }
   };
 
-  const handleSaveSetting = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await updateSetting({
-      name: settingName.trim(),
-      address: settingAddress.trim(),
-      phone: settingPhone.trim(),
-      wifi_password: settingWifi.trim(),
-      tax_percent: settingTax,
-      service_percent: settingService,
-      receipt_footer: settingFooter.trim()
-    });
-    setSettingSavedNotice(true);
-    setTimeout(() => setSettingSavedNotice(false), 3000);
-    loadAllData();
-  };
-
   interface NavItem {
-    id: 'analytics' | 'users' | 'menus' | 'tables' | 'orders' | 'expenses' | 'settings';
+    id: 'analytics' | 'users' | 'menus' | 'tables' | 'orders' | 'expenses';
     label: string;
     icon: React.ComponentType<{ className?: string }>;
     badge?: number;
@@ -331,8 +366,149 @@ export default function AdminPage() {
     { id: 'tables', label: 'Meja & Kode QR', icon: QrCode, badge: tables.length },
     { id: 'orders', label: 'Pesanan & Transaksi', icon: Receipt, badge: orders.length },
     { id: 'expenses', label: 'Pengeluaran & Biaya', icon: Wallet },
-    { id: 'settings', label: 'Pengaturan Resto', icon: Settings },
   ];
+
+  // Admin Auth Gate Screen
+  if (isAuthLoaded && !activeAdmin) {
+    const adminUsers = users.filter(u => u.role === 'admin' && u.is_active);
+    const displayAdmins = adminUsers.length > 0 ? adminUsers : users.slice(0, 3);
+    const selectedAdminObj = users.find(u => u.id === selectedAdminId);
+
+    return (
+      <div className="bg-neutral-950 min-h-screen text-white flex flex-col items-center justify-center p-4 font-sans selection:bg-amber-500 selection:text-neutral-950">
+        <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl relative">
+          
+          <div className="text-center space-y-2">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-500/10">
+              <Shield className="w-7 h-7" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-white uppercase">Admin Control Center</h1>
+              <p className="text-xs text-neutral-400 mt-1">Otorisasi & Manajemen Pemilik / Manajer Restoran</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider block">
+              Pilih Akun Administrator
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {displayAdmins.map(user => {
+                const isSelected = selectedAdminId === user.id;
+                return (
+                  <button
+                    key={user.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedAdminId(user.id);
+                      setLoginError('');
+                    }}
+                    className={`p-3 rounded-xl border text-left flex items-center space-x-3 transition ${
+                      isSelected
+                        ? 'bg-amber-500/10 border-amber-500/60 ring-1 ring-amber-500/50'
+                        : 'bg-neutral-950/60 border-neutral-800 hover:border-neutral-700 text-neutral-300'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs uppercase ${
+                      isSelected ? 'bg-amber-500 text-neutral-950 font-black' : 'bg-neutral-800 text-neutral-400'
+                    }`}>
+                      {user.name.charAt(0)}
+                    </div>
+                    <div className="overflow-hidden">
+                      <p className={`text-xs font-bold truncate ${isSelected ? 'text-amber-400' : 'text-neutral-200'}`}>
+                        {user.name}
+                      </p>
+                      <p className="text-[10px] text-neutral-400 uppercase font-mono">{user.role}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <form onSubmit={handleAdminLogin} className="space-y-4">
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">PIN Masuk</label>
+                {selectedAdminObj && (
+                  <span className="text-[10px] text-neutral-500">
+                    Akun: <strong className="text-neutral-300">{selectedAdminObj.name}</strong>
+                  </span>
+                )}
+              </div>
+              <input
+                type="password"
+                maxLength={6}
+                value={adminPin}
+                onChange={e => {
+                  setAdminPin(e.target.value);
+                  setLoginError('');
+                }}
+                placeholder="Masukkan 4-digit PIN..."
+                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-center tracking-[0.5em] text-lg font-bold text-white focus:outline-none focus:border-amber-500 transition"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => setAdminPin(prev => (prev.length < 6 ? prev + num : prev))}
+                  className="py-2.5 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-bold text-neutral-200 transition active:scale-95"
+                >
+                  {num}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setAdminPin('')}
+                className="py-2.5 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-xs font-bold text-neutral-400 transition"
+              >
+                C
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminPin(prev => (prev.length < 6 ? prev + '0' : prev))}
+                className="py-2.5 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-bold text-neutral-200 transition active:scale-95"
+              >
+                0
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminPin(prev => prev.slice(0, -1))}
+                className="py-2.5 bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-xs font-bold text-neutral-400 transition"
+              >
+                ⌫
+              </button>
+            </div>
+
+            {loginError && (
+              <div className="p-2.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-center text-xs text-rose-400">
+                {loginError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-amber-500/20 active:scale-98"
+            >
+              Masuk Dashboard Admin
+            </button>
+          </form>
+
+          <div className="pt-2 border-t border-neutral-800 flex items-center justify-between text-[11px] text-neutral-500">
+            <Link href="/kasir" className="hover:text-amber-400 transition flex items-center gap-1">
+              ← Ke Layar Kasir (POS)
+            </Link>
+            <Link href="/" className="hover:text-amber-400 transition flex items-center gap-1">
+              Halaman Pelanggan →
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-neutral-100 min-h-screen text-neutral-900 font-sans flex antialiased selection:bg-neutral-900 selection:text-white">
@@ -371,18 +547,27 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* Admin Identity Card */}
-        <div className="p-3 mx-3 my-3 bg-neutral-900/80 rounded-xl border border-neutral-800/80 flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded-lg bg-neutral-800 flex items-center justify-center font-bold text-xs text-amber-400">
-            A
+        {/* Admin Identity Card with Logout */}
+        <div className="p-3 mx-3 my-3 bg-neutral-900/80 rounded-xl border border-neutral-800/80 flex items-center justify-between">
+          <div className="flex items-center space-x-2.5 overflow-hidden">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center font-bold text-xs text-amber-400 shrink-0">
+              {activeAdmin?.name?.charAt(0) || 'A'}
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-xs font-bold text-white truncate">{activeAdmin?.name || 'Administrator'}</p>
+              <p className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                Owner / Manajer
+              </p>
+            </div>
           </div>
-          <div className="overflow-hidden">
-            <p className="text-xs font-bold text-white truncate">Administrator</p>
-            <p className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              Owner / Manajer
-            </p>
-          </div>
+          <button
+            onClick={handleAdminLogout}
+            title="Keluar Admin"
+            className="p-1.5 text-neutral-400 hover:text-rose-400 hover:bg-neutral-800 rounded-lg transition"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Sidebar Navigation */}
@@ -452,13 +637,26 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2.5">
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-semibold border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Realtime Sync
+            </span>
+
             <button
               onClick={() => window.print()}
               className="bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition"
             >
               <Printer className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Cetak Laporan</span>
+            </button>
+
+            <button
+              onClick={handleAdminLogout}
+              className="flex items-center space-x-1.5 px-3 py-1.5 bg-neutral-100 hover:bg-rose-50 hover:text-rose-600 text-neutral-700 text-xs font-semibold rounded-lg transition border border-neutral-200"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Keluar</span>
             </button>
           </div>
         </header>
@@ -1021,107 +1219,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* TAB 7: PENGATURAN RESTORAN */}
-          {activeTab === 'settings' && (
-            <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6 space-y-6 max-w-2xl">
-              <div>
-                <h3 className="font-bold text-sm text-neutral-950 uppercase tracking-tight">Konfigurasi Restoran</h3>
-                <p className="text-xs text-neutral-500">Ubah profil resto yang tercetak pada struk kasir dan kode meja</p>
-              </div>
 
-              {settingSavedNotice && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Pengaturan restoran berhasil disimpan!</span>
-                </div>
-              )}
-
-              <form onSubmit={handleSaveSetting} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-semibold text-neutral-700 mb-1">Nama Restoran / Outlet</label>
-                  <input
-                    type="text"
-                    value={settingName}
-                    onChange={e => setSettingName(e.target.value)}
-                    className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-neutral-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-neutral-700 mb-1">Alamat Outlet</label>
-                  <input
-                    type="text"
-                    value={settingAddress}
-                    onChange={e => setSettingAddress(e.target.value)}
-                    className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-neutral-900"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-semibold text-neutral-700 mb-1">Nomor Telepon</label>
-                    <input
-                      type="text"
-                      value={settingPhone}
-                      onChange={e => setSettingPhone(e.target.value)}
-                      className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-neutral-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-neutral-700 mb-1">Password Wi-Fi Meja</label>
-                    <input
-                      type="text"
-                      value={settingWifi}
-                      onChange={e => setSettingWifi(e.target.value)}
-                      className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-neutral-900"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-semibold text-neutral-700 mb-1">Pajak Restoran PB1 (%)</label>
-                    <input
-                      type="number"
-                      value={settingTax}
-                      onChange={e => setSettingTax(parseInt(e.target.value) || 0)}
-                      className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-neutral-900"
-                    />
-                    <p className="text-[10px] text-neutral-400 mt-0.5">Misal: 10 untuk PB1 10%, atau 0 jika sudah nett.</p>
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-neutral-700 mb-1">Service Charge (%)</label>
-                    <input
-                      type="number"
-                      value={settingService}
-                      onChange={e => setSettingService(parseInt(e.target.value) || 0)}
-                      className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-neutral-900"
-                    />
-                    <p className="text-[10px] text-neutral-400 mt-0.5">Biaya layanan restoran (opsional).</p>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-neutral-700 mb-1">Pesan Kaki Struk (Receipt Footer)</label>
-                  <input
-                    type="text"
-                    value={settingFooter}
-                    onChange={e => setSettingFooter(e.target.value)}
-                    placeholder="Contoh: Terima kasih atas kunjungan Anda!"
-                    className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-neutral-900"
-                  />
-                  <p className="text-[10px] text-neutral-400 mt-0.5">Teks yang akan dicetak di bagian paling bawah struk thermal kasir.</p>
-                </div>
-
-                <button
-                  type="submit"
-                  className="bg-neutral-950 hover:bg-neutral-900 text-white font-semibold px-4 py-2 rounded-xl text-xs transition"
-                >
-                  Simpan Konfigurasi
-                </button>
-              </form>
-            </div>
-          )}
 
         </main>
       </div>
