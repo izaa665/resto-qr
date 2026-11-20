@@ -315,42 +315,13 @@ export default function AdminPage() {
   });
 
   const maxRevenueVal = Math.max(...trendData.map(d => d.revenue), 100000);
-  const maxOrdersVal = Math.max(...trendData.map(d => d.orders), 4);
   const peakSlot = trendData.reduce((prev, curr) => curr.revenue > prev.revenue ? curr : prev, trendData[0]);
-
-  // Generate smooth SVG points
-  const chartPoints = trendData.map((d, i) => {
-    const x = 55 + i * 90; // spans 55 to 595
-    const yRev = Math.round(160 - (d.revenue / maxRevenueVal) * 125);
-    const yOrd = Math.round(165 - (d.orders / maxOrdersVal) * 110);
-    return { x, yRev, yOrd, ...d };
-  });
-
-  // Build Bézier spline for Revenue
-  let revPath = `M ${chartPoints[0].x} ${chartPoints[0].yRev}`;
-  for (let i = 0; i < chartPoints.length - 1; i++) {
-    const p0 = chartPoints[i];
-    const p1 = chartPoints[i + 1];
-    const cpX = (p0.x + p1.x) / 2;
-    revPath += ` C ${cpX} ${p0.yRev}, ${cpX} ${p1.yRev}, ${p1.x} ${p1.yRev}`;
-  }
-  const revAreaPath = `${revPath} L ${chartPoints[chartPoints.length - 1].x} 180 L ${chartPoints[0].x} 180 Z`;
-
-  // Build Bézier spline for Orders
-  let ordPath = `M ${chartPoints[0].x} ${chartPoints[0].yOrd}`;
-  for (let i = 0; i < chartPoints.length - 1; i++) {
-    const p0 = chartPoints[i];
-    const p1 = chartPoints[i + 1];
-    const cpX = (p0.x + p1.x) / 2;
-    ordPath += ` C ${cpX} ${p0.yOrd}, ${cpX} ${p1.yOrd}, ${p1.x} ${p1.yOrd}`;
-  }
-  const ordAreaPath = `${ordPath} L ${chartPoints[chartPoints.length - 1].x} 180 L ${chartPoints[0].x} 180 Z`;
 
   // Indonesian Category Breakdown Calculation
   const catSalesMap = {
     makanan: { name: 'Makanan Utama', count: 0, revenue: 0, color: '#FF5B26' },
     minuman: { name: 'Minuman Segar', count: 0, revenue: 0, color: '#10B981' },
-    camilan: { name: 'Camilan & Snack', count: 0, revenue: 0, color: '#FBBF24' },
+    camilan: { name: 'Camilan & Snack', count: 0, revenue: 0, color: '#F59E0B' },
     dessert: { name: 'Kopi & Dessert', count: 0, revenue: 0, color: '#8B5CF6' }
   };
 
@@ -374,35 +345,23 @@ export default function AdminPage() {
   });
 
   const totalSoldPorsi = catSalesMap.makanan.count + catSalesMap.minuman.count + catSalesMap.camilan.count + catSalesMap.dessert.count;
-  const activeSoldPorsi = totalSoldPorsi > 0 ? totalSoldPorsi : 10;
-  const makananCount = totalSoldPorsi > 0 ? catSalesMap.makanan.count : 5;
-  const minumanCount = totalSoldPorsi > 0 ? catSalesMap.minuman.count : 3;
-  const camilanCount = totalSoldPorsi > 0 ? catSalesMap.camilan.count : 1;
-  const dessertCount = totalSoldPorsi > 0 ? catSalesMap.dessert.count : 1;
+  const activeSoldPorsi = totalSoldPorsi > 0 ? totalSoldPorsi : 5;
+  const makananCount = totalSoldPorsi > 0 ? catSalesMap.makanan.count : 4;
+  const minumanCount = totalSoldPorsi > 0 ? catSalesMap.minuman.count : 1;
+  const camilanCount = totalSoldPorsi > 0 ? catSalesMap.camilan.count : 0;
+  const dessertCount = totalSoldPorsi > 0 ? catSalesMap.dessert.count : 0;
 
   const makananPct = Math.round((makananCount / activeSoldPorsi) * 100);
   const minumanPct = Math.round((minumanCount / activeSoldPorsi) * 100);
   const camilanPct = Math.round((camilanCount / activeSoldPorsi) * 100);
   const dessertPct = Math.max(0, 100 - makananPct - minumanPct - camilanPct);
 
-  // Donut Arc offsets (Circumference = 2 * PI * 38 = 238.76)
-  const cRadius = 238.76;
-  const makananArc = ((makananPct / 100) * cRadius).toFixed(1);
-  const minumanArc = ((minumanPct / 100) * cRadius).toFixed(1);
-  const camilanArc = ((camilanPct / 100) * cRadius).toFixed(1);
-  const dessertArc = ((dessertPct / 100) * cRadius).toFixed(1);
-
-  const offsetMinuman = -parseFloat(makananArc);
-  const offsetCamilan = -(parseFloat(makananArc) + parseFloat(minumanArc));
-  const offsetDessert = -(parseFloat(makananArc) + parseFloat(minumanArc) + parseFloat(camilanArc));
-
   const categoriesList = [
     { name: 'Makanan Utama', pct: makananPct, count: makananCount, color: '#FF5B26' },
     { name: 'Minuman Segar', pct: minumanPct, count: minumanCount, color: '#10B981' },
-    { name: 'Camilan & Snack', pct: camilanPct, count: camilanCount, color: '#FBBF24' },
+    { name: 'Camilan & Snack', pct: camilanPct, count: camilanCount, color: '#F59E0B' },
     { name: 'Kopi & Dessert', pct: dessertPct, count: dessertCount, color: '#8B5CF6' }
   ];
-  const topCategory = categoriesList.reduce((prev, curr) => curr.count > prev.count ? curr : prev, categoriesList[0]);
 
   // Handlers
   const handleAddUser = async (e: React.FormEvent) => {
@@ -870,157 +829,92 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* ROW 1: 4 Key Metric Cards with Sparklines */}
+              {/* ROW 1: 4 Key Metric Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 
                 {/* 1. Total Revenue */}
-                <div className="bg-white rounded-2xl p-4.5 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex justify-between items-center">
+                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
                   <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-7 h-7 rounded-lg bg-[#FF5B26]/10 flex items-center justify-center text-[#FF5B26]">
-                        <Wallet className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="text-[11px] font-semibold text-gray-500">Total Pendapatan</span>
-                    </div>
+                    <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">Total Pendapatan</span>
                     <h3 className="text-xl font-black text-gray-900 tracking-tight">
                       {formatRupiah(totalIncome)}
                     </h3>
-                    <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
-                      <ArrowUp className="w-3 h-3" />
-                      <span>8.2%</span>
-                      <span className="text-gray-400 font-normal ml-0.5">vs Kemarin</span>
-                    </p>
+                    <span className="inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                      ↑ 8.2% vs kemarin
+                    </span>
                   </div>
-                  {/* Mini Sparkline SVG */}
-                  <div className="w-16 h-10 shrink-0">
-                    <svg viewBox="0 0 70 35" className="w-full h-full overflow-visible">
-                      <path
-                        d="M 0 30 Q 15 28 25 18 T 45 22 T 70 6"
-                        fill="none"
-                        stroke="#FF5B26"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                      />
-                    </svg>
+                  <div className="w-12 h-12 rounded-2xl bg-[#FF5B26]/10 text-[#FF5B26] flex items-center justify-center shrink-0">
+                    <Wallet className="w-6 h-6" />
                   </div>
                 </div>
 
                 {/* 2. Total Orders */}
-                <div className="bg-white rounded-2xl p-4.5 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex justify-between items-center">
+                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
                   <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-7 h-7 rounded-lg bg-[#FF8A00]/10 flex items-center justify-center text-[#FF8A00]">
-                        <ShoppingBag className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="text-[11px] font-semibold text-gray-500">Total Pesanan</span>
-                    </div>
+                    <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">Total Pesanan</span>
                     <h3 className="text-xl font-black text-gray-900 tracking-tight">
-                      {totalOrdersCount}
+                      {totalOrdersCount} Transaksi
                     </h3>
-                    <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
-                      <ArrowUp className="w-3 h-3" />
-                      <span>6.2%</span>
-                      <span className="text-gray-400 font-normal ml-0.5">vs Kemarin</span>
-                    </p>
+                    <span className="inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                      ↑ 6.2% vs kemarin
+                    </span>
                   </div>
-                  {/* Mini Sparkline SVG */}
-                  <div className="w-16 h-10 shrink-0">
-                    <svg viewBox="0 0 70 35" className="w-full h-full overflow-visible">
-                      <path
-                        d="M 0 28 Q 18 26 30 16 T 50 20 T 70 8"
-                        fill="none"
-                        stroke="#FF8A00"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                      />
-                    </svg>
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+                    <ShoppingBag className="w-6 h-6" />
                   </div>
                 </div>
 
-                {/* 3. New Customers */}
-                <div className="bg-white rounded-2xl p-4.5 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex justify-between items-center">
+                {/* 3. Average Order Value */}
+                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
                   <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                        <Users className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="text-[11px] font-semibold text-gray-500">Jumlah Pelanggan</span>
-                    </div>
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight">
-                      {totalCustomers}
-                    </h3>
-                    <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
-                      <ArrowUp className="w-3 h-3" />
-                      <span>4.1%</span>
-                      <span className="text-gray-400 font-normal ml-0.5">vs Kemarin</span>
-                    </p>
-                  </div>
-                  {/* Mini Sparkline SVG */}
-                  <div className="w-16 h-10 shrink-0">
-                    <svg viewBox="0 0 70 35" className="w-full h-full overflow-visible">
-                      <path
-                        d="M 0 32 Q 20 28 35 15 T 55 24 T 70 10"
-                        fill="none"
-                        stroke="#10B981"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </div>
-                </div>
-
-                {/* 4. Average Order Value */}
-                <div className="bg-white rounded-2xl p-4.5 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex justify-between items-center">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
-                        <DollarSign className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="text-[11px] font-semibold text-gray-500">Rata-rata Order (AOV)</span>
-                    </div>
+                    <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">Rata-rata Order (AOV)</span>
                     <h3 className="text-xl font-black text-gray-900 tracking-tight">
                       {formatRupiah(aov)}
                     </h3>
-                    <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
-                      <ArrowUp className="w-3 h-3" />
-                      <span>3.7%</span>
-                      <span className="text-gray-400 font-normal ml-0.5">vs Kemarin</span>
-                    </p>
+                    <span className="inline-flex items-center text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
+                      Per transaksi paid
+                    </span>
                   </div>
-                  {/* Mini Sparkline SVG */}
-                  <div className="w-16 h-10 shrink-0">
-                    <svg viewBox="0 0 70 35" className="w-full h-full overflow-visible">
-                      <path
-                        d="M 0 30 Q 18 29 32 20 T 52 22 T 70 11"
-                        fill="none"
-                        stroke="#F59E0B"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                      />
-                    </svg>
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                    <Receipt className="w-6 h-6" />
+                  </div>
+                </div>
+
+                {/* 4. Active Customers */}
+                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">Pelanggan Terlayani</span>
+                    <h3 className="text-xl font-black text-gray-900 tracking-tight">
+                      {totalCustomers} Pelanggan
+                    </h3>
+                    <span className="inline-flex items-center text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
+                      Meja & Takeaway
+                    </span>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
+                    <Users className="w-6 h-6" />
                   </div>
                 </div>
 
               </div>
 
-              {/* ROW 2: Middle Section (Revenue & Orders Trend + Orders by Category) */}
+              {/* ROW 2: Main Section (Clean Bar Chart + Category Distribution) */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
                 
-                {/* Card 1: Revenue & Orders Trend (7 or 8 cols) */}
-                <div className="lg:col-span-7 xl:col-span-8 bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4">
+                {/* Card 1: Hourly Sales Bar Chart (8 cols) */}
+                <div className="lg:col-span-8 bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-sm flex flex-col justify-between space-y-4">
                   {/* Header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-50">
                     <div>
-                      <h3 className="font-bold text-sm text-gray-900">Tren Pendapatan & Pesanan</h3>
-                      <p className="text-[11px] text-gray-400">Grafik omzet dan volume transaksi berkala</p>
+                      <h3 className="font-bold text-sm text-gray-900">Grafik Penjualan Hari Ini</h3>
+                      <p className="text-[11px] text-gray-400">Distribusi omzet dan pesanan per interval 2 jam</p>
                     </div>
 
-                    <div className="flex items-center space-x-3">
-                      {/* Pill filter */}
-                      <div className="bg-gray-100 p-0.5 rounded-full flex items-center text-[11px] font-semibold">
+                    <div className="flex items-center space-x-2">
+                      <div className="bg-gray-100 p-0.5 rounded-xl flex items-center text-[11px] font-semibold">
                         <button
                           onClick={() => setTrendRange('today')}
-                          className={`px-3 py-1 rounded-full transition ${
+                          className={`px-3 py-1 rounded-lg transition ${
                             trendRange === 'today' ? 'bg-[#FF5B26] text-white shadow-xs' : 'text-gray-500 hover:text-gray-900'
                           }`}
                         >
@@ -1028,7 +922,7 @@ export default function AdminPage() {
                         </button>
                         <button
                           onClick={() => setTrendRange('week')}
-                          className={`px-3 py-1 rounded-full transition ${
+                          className={`px-3 py-1 rounded-lg transition ${
                             trendRange === 'week' ? 'bg-[#FF5B26] text-white shadow-xs' : 'text-gray-500 hover:text-gray-900'
                           }`}
                         >
@@ -1036,276 +930,159 @@ export default function AdminPage() {
                         </button>
                         <button
                           onClick={() => setTrendRange('month')}
-                          className={`px-3 py-1 rounded-full transition ${
+                          className={`px-3 py-1 rounded-lg transition ${
                             trendRange === 'month' ? 'bg-[#FF5B26] text-white shadow-xs' : 'text-gray-500 hover:text-gray-900'
                           }`}
                         >
                           Bulan Ini
                         </button>
                       </div>
-
-                      {/* Dropdown Indicator */}
-                      <span className="text-[11px] font-semibold text-gray-600 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200">
-                        {trendRange === 'today' ? 'Hari Ini' : trendRange === 'week' ? 'Minggu Ini' : 'Bulan Ini'} ▾
-                      </span>
                     </div>
                   </div>
 
-                  {/* Legend */}
-                  <div className="flex items-center justify-end space-x-4 text-[11px] font-semibold">
-                    <div className="flex items-center space-x-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#FF5B26]"></span>
-                      <span className="text-gray-600">Pendapatan (Rp)</span>
-                    </div>
-                    <div className="flex items-center space-x-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                      <span className="text-gray-600">Pesanan</span>
-                    </div>
-                  </div>
+                  {/* Clean Modern Bar Chart Container */}
+                  <div className="relative pt-4">
+                    {/* Horizontal Reference Lines */}
+                    <div className="absolute inset-x-0 top-6 border-b border-dashed border-gray-100" />
+                    <div className="absolute inset-x-0 top-20 border-b border-dashed border-gray-100" />
+                    <div className="absolute inset-x-0 bottom-8 border-b border-gray-200" />
 
-                  {/* SVG Dual Spline Wave Area Chart */}
-                  <div className="relative h-60 w-full pt-4">
-                    <svg viewBox="0 0 650 200" className="w-full h-full overflow-visible" preserveAspectRatio="none">
-                      <defs>
-                        <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#FF5B26" stopOpacity="0.22" />
-                          <stop offset="100%" stopColor="#FF5B26" stopOpacity="0.0" />
-                        </linearGradient>
-                        <linearGradient id="ordersGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#10B981" stopOpacity="0.22" />
-                          <stop offset="100%" stopColor="#10B981" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-
-                      {/* Grid Lines */}
-                      <line x1="45" y1="30" x2="605" y2="30" stroke="#F1F3F5" strokeDasharray="3 3" />
-                      <line x1="45" y1="75" x2="605" y2="75" stroke="#F1F3F5" strokeDasharray="3 3" />
-                      <line x1="45" y1="120" x2="605" y2="120" stroke="#F1F3F5" strokeDasharray="3 3" />
-                      <line x1="45" y1="165" x2="605" y2="165" stroke="#E5E7EB" />
-
-                      {/* Y-Axis Labels Left (Rupiah) */}
-                      <text x="10" y="34" fontSize="10" fill="#9CA3AF" fontFamily="sans-serif" fontWeight="bold">{formatRupiahCompact(maxRevenueVal)}</text>
-                      <text x="10" y="79" fontSize="10" fill="#9CA3AF" fontFamily="sans-serif">{formatRupiahCompact(Math.round(maxRevenueVal * 0.66))}</text>
-                      <text x="10" y="124" fontSize="10" fill="#9CA3AF" fontFamily="sans-serif">{formatRupiahCompact(Math.round(maxRevenueVal * 0.33))}</text>
-                      <text x="15" y="169" fontSize="10" fill="#9CA3AF" fontFamily="sans-serif">Rp 0</text>
-
-                      {/* Y-Axis Labels Right (Orders) */}
-                      <text x="612" y="34" fontSize="10" fill="#9CA3AF" fontFamily="sans-serif" fontWeight="bold">{maxOrdersVal}</text>
-                      <text x="612" y="79" fontSize="10" fill="#9CA3AF" fontFamily="sans-serif">{Math.round(maxOrdersVal * 0.66)}</text>
-                      <text x="612" y="124" fontSize="10" fill="#9CA3AF" fontFamily="sans-serif">{Math.round(maxOrdersVal * 0.33)}</text>
-                      <text x="615" y="169" fontSize="10" fill="#9CA3AF" fontFamily="sans-serif">0</text>
-
-                      {/* Revenue Area & Spline */}
-                      <path d={revAreaPath} fill="url(#revenueGrad)" />
-                      <path d={revPath} fill="none" stroke="#FF5B26" strokeWidth="3" strokeLinecap="round" />
-
-                      {/* Orders Area & Spline */}
-                      <path d={ordAreaPath} fill="url(#ordersGrad)" />
-                      <path d={ordPath} fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" />
-
-                      {/* Dynamic Dots on Points */}
-                      {chartPoints.map((pt, idx) => (
-                        <g key={idx}>
-                          <circle cx={pt.x} cy={pt.yRev} r={pt.label === peakSlot.label ? "4.5" : "3"} fill="#FF5B26" stroke="#FFFFFF" strokeWidth="1.5" />
-                          <circle cx={pt.x} cy={pt.yOrd} r="3" fill="#10B981" stroke="#FFFFFF" strokeWidth="1.5" />
-                        </g>
-                      ))}
-
-                      {/* Peak Tooltip Badge */}
-                      {(() => {
-                        const peakPt = chartPoints.find(p => p.label === peakSlot.label) || chartPoints[1];
+                    {/* Bars Grid */}
+                    <div className="flex items-end justify-between gap-3 h-44 pt-6 pb-2 px-2 relative z-10">
+                      {trendData.map((slot, idx) => {
+                        const isPeak = slot.label === peakSlot.label;
+                        const heightPercent = Math.max(12, Math.round((slot.revenue / maxRevenueVal) * 100));
                         return (
-                          <g transform={`translate(${peakPt.x - 35}, ${Math.max(8, peakPt.yRev - 28)})`}>
-                            <rect width="70" height="20" rx="6" fill="#FF5B26" filter="drop-shadow(0 2px 4px rgba(255,91,38,0.25))" />
-                            <text x="35" y="13.5" fontSize="9" fontWeight="bold" fill="#FFFFFF" textAnchor="middle">
-                              {formatRupiahCompact(peakPt.revenue)}
-                            </text>
-                          </g>
+                          <div key={idx} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+                            {/* Hover Tooltip */}
+                            <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-gray-900 text-white text-[10px] rounded-lg py-1 px-2 font-mono font-bold whitespace-nowrap shadow-lg z-20">
+                              {formatRupiah(slot.revenue)} • {slot.orders} order
+                            </div>
+
+                            {/* Peak Amount Badge */}
+                            {isPeak && (
+                              <span className="text-[9px] font-bold text-[#FF5B26] mb-1 font-mono">
+                                {formatRupiahCompact(slot.revenue)}
+                              </span>
+                            )}
+
+                            {/* Main Bar */}
+                            <div 
+                              style={{ height: `${heightPercent}%` }} 
+                              className={`w-full max-w-[44px] rounded-t-xl transition-all duration-300 ${
+                                isPeak 
+                                  ? 'bg-[#FF5B26] shadow-sm shadow-[#FF5B26]/30' 
+                                  : 'bg-gray-100 hover:bg-[#FF5B26]/30'
+                              }`}
+                            />
+
+                            {/* Time Label */}
+                            <span className={`text-[11px] mt-2 font-medium ${
+                              isPeak ? 'font-bold text-[#FF5B26]' : 'text-gray-400'
+                            }`}>
+                              {slot.label}
+                            </span>
+                          </div>
                         );
-                      })()}
-                    </svg>
+                      })}
+                    </div>
                   </div>
 
-                  {/* X Axis Time Labels */}
-                  <div className="flex justify-between text-[11px] font-semibold text-gray-400 px-6 pt-1">
-                    {timeSlots.map(s => (
-                      <span key={s.label} className={s.label === peakSlot.label ? 'text-[#FF5B26] font-bold' : ''}>
-                        {s.label}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Bottom Strip inside Card */}
-                  <div className="pt-3 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center sm:text-left">
+                  {/* Bottom Strip Summary */}
+                  <div className="pt-3 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                     <div className="flex items-center space-x-2">
-                      <div className="w-6 h-6 rounded-md bg-[#FF5B26]/10 flex items-center justify-center text-[#FF5B26]">
-                        <Wallet className="w-3 h-3" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-400">Total Omzet</p>
-                        <p className="text-xs font-bold text-gray-900">{formatRupiah(totalIncome)}</p>
-                      </div>
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#FF5B26]" />
+                      <span className="text-gray-500">Puncak Omzet:</span>
+                      <strong className="text-gray-900 font-mono">{formatRupiah(peakSlot.revenue)}</strong>
+                      <span className="text-gray-400">({peakSlot.label})</span>
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      <div className="w-6 h-6 rounded-md bg-[#FF8A00]/10 flex items-center justify-center text-[#FF8A00]">
-                        <ShoppingBag className="w-3 h-3" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-400">Total Transaksi</p>
-                        <p className="text-xs font-bold text-gray-900">{orders.length} Order</p>
-                      </div>
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                      <span className="text-gray-500">Volume Terbanyak:</span>
+                      <strong className="text-gray-900 font-mono">{peakSlot.orders} Order</strong>
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                      <div className="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center text-amber-500">
-                        <TrendingUp className="w-3 h-3" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-400">Puncak Omzet</p>
-                        <p className="text-xs font-bold text-gray-900">{formatRupiah(peakSlot.revenue)}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <div className="w-6 h-6 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                        <Users className="w-3 h-3" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-400">Puncak Jam</p>
-                        <p className="text-xs font-bold text-gray-900">{peakSlot.label} WIB ({peakSlot.orders} Order)</p>
-                      </div>
+                    <div className="flex items-center space-x-2 sm:justify-end">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-gray-500 text-[11px]">Sistem Kasir & Dapur Realtime</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Card 2: Orders by Category (5 or 4 cols) */}
-                <div className="lg:col-span-5 xl:col-span-4 bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between space-y-4">
+                {/* Card 2: Category Distribution (4 cols) */}
+                <div className="lg:col-span-4 bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-sm flex flex-col justify-between space-y-4">
                   {/* Header */}
-                  <div className="flex items-center justify-between pb-1">
-                    <h3 className="font-bold text-sm text-gray-900">Penjualan per Kategori</h3>
-                    <span className="text-[11px] font-semibold text-gray-600 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200">
-                      Semua Kategori ▾
+                  <div className="flex items-center justify-between pb-1 border-b border-gray-50">
+                    <div>
+                      <h3 className="font-bold text-sm text-gray-900">Penjualan per Kategori</h3>
+                      <p className="text-[11px] text-gray-400">Distribusi menu yang dipesan</p>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                      Hari Ini
                     </span>
                   </div>
 
-                  {/* Donut Chart with Breakdown */}
-                  <div className="flex items-center justify-between gap-4 py-2">
-                    {/* SVG Donut */}
-                    <div className="relative w-36 h-36 shrink-0 flex items-center justify-center">
-                      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                        {/* Makanan Utama */}
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="38"
-                          fill="transparent"
-                          stroke="#FF5B26"
-                          strokeWidth="13"
-                          strokeDasharray={`${makananArc} ${cRadius}`}
-                          strokeDashoffset="0"
-                        />
-                        {/* Minuman Segar */}
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="38"
-                          fill="transparent"
-                          stroke="#10B981"
-                          strokeWidth="13"
-                          strokeDasharray={`${minumanArc} ${cRadius}`}
-                          strokeDashoffset={offsetMinuman}
-                        />
-                        {/* Camilan & Snack */}
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="38"
-                          fill="transparent"
-                          stroke="#FBBF24"
-                          strokeWidth="13"
-                          strokeDasharray={`${camilanArc} ${cRadius}`}
-                          strokeDashoffset={offsetCamilan}
-                        />
-                        {/* Kopi & Dessert */}
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="38"
-                          fill="transparent"
-                          stroke="#8B5CF6"
-                          strokeWidth="13"
-                          strokeDasharray={`${dessertArc} ${cRadius}`}
-                          strokeDashoffset={offsetDessert}
-                        />
-                      </svg>
-                      {/* Center Text */}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                        <span className="text-xl font-black text-gray-900 leading-none">
-                          {activeSoldPorsi}
-                        </span>
-                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">
-                          Porsi Terjual
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Breakdown List */}
-                    <div className="grow space-y-2 text-xs">
-                      {categoriesList.map((cat, idx) => (
-                        <div key={idx} className="flex items-center justify-between">
-                          <div className="flex items-center space-x-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }}></span>
-                            <span className="font-semibold text-gray-700">{cat.name}</span>
-                          </div>
+                  {/* Category Progress Bars */}
+                  <div className="space-y-4">
+                    {categoriesList.map((cat, idx) => (
+                      <div key={idx} className="space-y-1.5">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-semibold text-gray-800 flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                            {cat.name}
+                          </span>
                           <div className="text-right">
-                            <span className="font-bold text-gray-900">{cat.pct}%</span>
-                            <p className="text-[10px] text-gray-400">{cat.count} Porsi</p>
+                            <span className="font-bold text-gray-900 font-mono">{cat.pct}%</span>
+                            <span className="text-gray-400 text-[10px] ml-1.5 font-medium">({cat.count} porsi)</span>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                        <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full rounded-full transition-all duration-500" 
+                            style={{ width: `${Math.max(cat.pct, cat.count > 0 ? 6 : 0)}%`, backgroundColor: cat.color }} 
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
-                  {/* Top Category Callout Card */}
-                  <div className="p-3 bg-gradient-to-r from-[#FFF5F1] to-[#FFF8F5] rounded-2xl border border-[#FFE2D6] flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-xl bg-[#FF5B26]/15 flex items-center justify-center text-[#FF5B26] shrink-0">
-                      <Crown className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-[#FF5B26] uppercase tracking-wide">Kategori Terlaris</p>
-                      <p className="text-xs text-gray-800 font-medium">
-                        <strong className="text-gray-900">{topCategory.name}</strong> mendominasi pesanan dengan kontribusi {topCategory.pct}%.
-                      </p>
-                    </div>
+                  {/* Summary Footer */}
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                    <span className="text-gray-500">
+                      Total Porsi: <strong className="text-gray-900">{activeSoldPorsi} Porsi</strong>
+                    </span>
+                    <span className="font-black text-gray-900 font-mono">
+                      {formatRupiah(totalIncome)}
+                    </span>
                   </div>
                 </div>
 
               </div>
 
-              {/* ROW 3: Bottom Section (Top Selling Dishes, Order Status, Business Insights) */}
+              {/* ROW 3: Bottom Operational Section (3 Cards) */}
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-5">
                 
                 {/* 1. Top Selling Dishes (4 cols) */}
-                <div className="xl:col-span-4 bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4 flex flex-col justify-between">
-                  <div className="flex items-center justify-between pb-1">
+                <div className="xl:col-span-4 bg-white rounded-2xl p-5 border border-gray-100 shadow-sm space-y-3 flex flex-col justify-between">
+                  <div className="flex items-center justify-between pb-1 border-b border-gray-50">
                     <div>
                       <h3 className="font-bold text-sm text-gray-900">Menu Paling Laris</h3>
-                      <p className="text-[11px] text-gray-400">Peringkat menu dengan pesanan terbanyak</p>
+                      <p className="text-[11px] text-gray-400">Peringkat menu terfavorit</p>
                     </div>
                     <button 
                       onClick={() => setActiveTab('menus')}
                       className="text-xs font-semibold text-[#FF5B26] hover:underline transition"
                     >
-                      Lihat Semua
+                      Kelola Menu
                     </button>
                   </div>
 
-                  <div className="space-y-3">
-                    {displayDishes.map((dish, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-xs p-1.5 hover:bg-gray-50 rounded-2xl transition">
-                        <div className="flex items-center space-x-3">
-                          <span className={`w-6 h-6 rounded-xl font-bold flex items-center justify-center text-[11px] ${
+                  <div className="space-y-2.5">
+                    {displayDishes.slice(0, 4).map((dish, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-xs p-1 hover:bg-gray-50 rounded-xl transition">
+                        <div className="flex items-center space-x-2.5 min-w-0">
+                          <span className={`w-5 h-5 rounded-lg font-bold flex items-center justify-center text-[10px] shrink-0 ${
                             idx === 0 ? 'bg-amber-100 text-amber-700' :
                             idx === 1 ? 'bg-gray-100 text-gray-700' :
                             idx === 2 ? 'bg-orange-100 text-orange-700' :
@@ -1319,7 +1096,7 @@ export default function AdminPage() {
                             onError={(e) => { 
                               (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120&auto=format&fit=crop&q=80'; 
                             }}
-                            className="w-10 h-10 rounded-xl object-cover border border-gray-100 shadow-2xs shrink-0" 
+                            className="w-9 h-9 rounded-xl object-cover border border-gray-100 shrink-0" 
                           />
                           <div className="min-w-0">
                             <p className="font-bold text-gray-900 truncate">{dish.name}</p>
@@ -1334,137 +1111,119 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* 2. Order Status (4 cols) */}
-                <div className="xl:col-span-4 bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4 flex flex-col justify-between">
-                  <div className="flex items-center justify-between pb-1">
+                {/* 2. Order Status Breakdown (4 cols) */}
+                <div className="xl:col-span-4 bg-white rounded-2xl p-5 border border-gray-100 shadow-sm space-y-3 flex flex-col justify-between">
+                  <div className="flex items-center justify-between pb-1 border-b border-gray-50">
                     <div>
                       <h3 className="font-bold text-sm text-gray-900">Status Pesanan</h3>
-                      <p className="text-[11px] text-gray-400">Progres pemrosesan pesanan saat ini</p>
+                      <p className="text-[11px] text-gray-400">Progres pesanan dapur & meja</p>
                     </div>
-                    <span className="text-[11px] font-semibold text-gray-600 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200">
-                      Hari Ini ▾
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                      {totalOrdersCount} Total
                     </span>
                   </div>
 
-                  {/* Dynamic Speedometer Gauge SVG */}
-                  <div className="relative w-52 h-28 mx-auto flex items-end justify-center">
-                    <svg viewBox="0 0 200 110" className="w-full h-full overflow-visible">
-                      {/* Background Track */}
-                      <path
-                        d="M 25 100 A 75 75 0 0 1 175 100"
-                        fill="none"
-                        stroke="#F1F3F5"
-                        strokeWidth="14"
-                        strokeLinecap="round"
-                      />
-                      {/* Active Dynamic Arc */}
-                      <path
-                        d="M 25 100 A 75 75 0 0 1 175 100"
-                        fill="none"
-                        stroke="#10B981"
-                        strokeWidth="14"
-                        strokeLinecap="round"
-                        strokeDasharray="235.6"
-                        strokeDashoffset={`${235.6 - (completedPct / 100) * 235.6}`}
-                      />
-                    </svg>
-                    {/* Center Text */}
-                    <div className="absolute bottom-2 flex flex-col items-center justify-center text-center">
-                      <span className="text-3xl font-black text-gray-900 leading-none">
-                        {totalOrdersCount}
-                      </span>
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-1">
-                        Pesanan Masuk
-                      </span>
+                  {/* Multi-segment Bar */}
+                  <div className="space-y-2 py-1">
+                    <div className="w-full bg-gray-100 h-3 rounded-full flex overflow-hidden">
+                      <div style={{ width: `${completedPct}%` }} className="bg-emerald-500 h-full transition-all" title={`Selesai: ${completedOrders}`} />
+                      <div style={{ width: `${preparingPct}%` }} className="bg-amber-400 h-full transition-all" title={`Dimasak: ${preparingOrders}`} />
+                      <div style={{ width: `${pendingPct}%` }} className="bg-[#FF5B26] h-full transition-all" title={`Menunggu: ${pendingOrders}`} />
+                      <div style={{ width: `${cancelledPct}%` }} className="bg-rose-500 h-full transition-all" title={`Batal: ${cancelledOrders}`} />
                     </div>
                   </div>
 
-                  {/* 4 Bottom Status Pills */}
-                  <div className="grid grid-cols-4 gap-2 pt-3 border-t border-gray-100 text-center">
-                    <div>
-                      <p className="text-[11px] font-bold text-emerald-600">
-                        {completedPct}%
-                      </p>
-                      <p className="text-sm font-black text-gray-900 mt-0.5">{completedOrders}</p>
-                      <p className="text-[10px] text-gray-400 font-medium">Selesai</p>
+                  {/* 4 Status Pills */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-100 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="text-gray-600 font-medium">Selesai</span>
+                      </div>
+                      <span className="font-bold text-emerald-800">{completedOrders}</span>
                     </div>
 
-                    <div>
-                      <p className="text-[11px] font-bold text-amber-500">
-                        {preparingPct}%
-                      </p>
-                      <p className="text-sm font-black text-gray-900 mt-0.5">{preparingOrders}</p>
-                      <p className="text-[10px] text-gray-400 font-medium">Dimasak</p>
+                    <div className="p-2.5 rounded-xl bg-amber-50/60 border border-amber-100 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-500" />
+                        <span className="text-gray-600 font-medium">Dimasak</span>
+                      </div>
+                      <span className="font-bold text-amber-800">{preparingOrders}</span>
                     </div>
 
-                    <div>
-                      <p className="text-[11px] font-bold text-[#FF5B26]">
-                        {pendingPct}%
-                      </p>
-                      <p className="text-sm font-black text-gray-900 mt-0.5">{pendingOrders}</p>
-                      <p className="text-[10px] text-gray-400 font-medium">Menunggu</p>
+                    <div className="p-2.5 rounded-xl bg-orange-50/60 border border-orange-100 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#FF5B26]" />
+                        <span className="text-gray-600 font-medium">Menunggu</span>
+                      </div>
+                      <span className="font-bold text-[#FF5B26]">{pendingOrders}</span>
                     </div>
 
-                    <div>
-                      <p className="text-[11px] font-bold text-rose-500">
-                        {cancelledPct}%
-                      </p>
-                      <p className="text-sm font-black text-gray-900 mt-0.5">{cancelledOrders}</p>
-                      <p className="text-[10px] text-gray-400 font-medium">Batal</p>
+                    <div className="p-2.5 rounded-xl bg-rose-50/60 border border-rose-100 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        <span className="text-gray-600 font-medium">Batal</span>
+                      </div>
+                      <span className="font-bold text-rose-800">{cancelledOrders}</span>
                     </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-gray-100 text-center">
+                    <p className="text-[11px] text-gray-400">
+                      {completedOrders} dari {totalOrdersCount} pesanan selesai disajikan
+                    </p>
                   </div>
                 </div>
 
-                {/* 3. Business Insights (4 cols) */}
-                <div className="xl:col-span-4 bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4 flex flex-col justify-between">
-                  <div className="pb-1">
-                    <h3 className="font-bold text-sm text-gray-900">Ringkasan Operasional</h3>
-                    <p className="text-[11px] text-gray-400">Parameter performa kunci Kans Resto</p>
+                {/* 3. Recent Orders Live Feed (4 cols) */}
+                <div className="xl:col-span-4 bg-white rounded-2xl p-5 border border-gray-100 shadow-sm space-y-3 flex flex-col justify-between">
+                  <div className="flex items-center justify-between pb-1 border-b border-gray-50">
+                    <div>
+                      <h3 className="font-bold text-sm text-gray-900">Pesanan Masuk Terbaru</h3>
+                      <p className="text-[11px] text-gray-400">Aktivitas pesanan terkini</p>
+                    </div>
+                    <button 
+                      onClick={() => setActiveTab('orders')}
+                      className="text-xs font-semibold text-[#FF5B26] hover:underline transition"
+                    >
+                      Lihat Semua
+                    </button>
                   </div>
 
-                  {/* 2x2 Metric Grid */}
-                  <div className="grid grid-cols-2 gap-4 py-1 text-xs">
-                    <div className="space-y-1">
-                      <p className="text-[11px] text-gray-400 font-medium">Rata-rata Order (AOV)</p>
-                      <p className="font-black text-gray-900 text-sm">
-                        {formatRupiah(aov)}
-                      </p>
-                      <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-0.5">
-                        <ArrowUp className="w-2.5 h-2.5" />
-                        <span>3.7% vs kemarin</span>
-                      </p>
-                    </div>
-
-                    <div className="space-y-1">
-                      <p className="text-[11px] text-gray-400 font-medium">Menu Terlaris</p>
-                      <p className="font-black text-gray-900 text-sm truncate">
-                        {bestSellers[0]?.name || (menus[0]?.name || 'Nasi Goreng Spesial')}
-                      </p>
-                      <p className="text-[10px] text-gray-400 font-medium">Paling diminati</p>
-                    </div>
-
-                    <div className="space-y-1 pt-3 border-t border-gray-50">
-                      <p className="text-[11px] text-gray-400 font-medium">Total Pelanggan</p>
-                      <p className="font-black text-gray-900 text-sm">
-                        {totalCustomers} Tamu
-                      </p>
-                      <p className="text-[10px] text-gray-400 font-medium">Tercatat di sistem</p>
-                    </div>
-
-                    <div className="space-y-1 pt-3 border-t border-gray-50">
-                      <p className="text-[11px] text-gray-400 font-medium">Jam Ramai Resto</p>
-                      <p className="font-black text-gray-900 text-sm">
-                        12:00 – 14:00 WIB
-                      </p>
-                      <p className="text-[10px] text-gray-400 font-medium">Waktu puncak makan siang</p>
-                    </div>
+                  <div className="space-y-2">
+                    {orders.slice(0, 4).map(o => (
+                      <div key={o.id} className="p-2 rounded-xl border border-gray-50 hover:bg-gray-50/80 transition flex items-center justify-between text-xs">
+                        <div className="min-w-0 space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-bold text-gray-900">{o.order_number}</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-gray-100 text-gray-600 font-semibold">
+                              {o.order_type === 'takeaway' ? 'Takeaway' : `Meja ${o.table_number || '-'}`}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-gray-400 truncate">{o.customer_name || 'Pelanggan'}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-mono font-bold text-gray-900">{formatRupiah(o.total_amount)}</p>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                            o.order_status === 'completed' ? 'bg-emerald-100 text-emerald-800' :
+                            o.order_status === 'processing' ? 'bg-amber-100 text-amber-800' :
+                            o.order_status === 'cancelled' ? 'bg-rose-100 text-rose-800' :
+                            'bg-orange-100 text-orange-800'
+                          }`}>
+                            {o.order_status === 'completed' ? 'Selesai' :
+                             o.order_status === 'processing' ? 'Dimasak' :
+                             o.order_status === 'cancelled' ? 'Batal' : 'Menunggu'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
-                  {/* System Status Banner */}
-                  <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100 text-center">
-                    <p className="text-xs font-semibold text-gray-700">
-                      Terminal Kasir, Dapur & Meja QR Terhubung Aktif
-                    </p>
+                  <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
+                    <span>Kasir & Meja QR Realtime</span>
+                    <Link href="/kasir" className="text-[#FF5B26] font-semibold hover:underline">
+                      Buka POS Kasir →
+                    </Link>
                   </div>
                 </div>
 
