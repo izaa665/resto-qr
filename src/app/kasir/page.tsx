@@ -703,22 +703,22 @@ export default function CashierPage() {
                     return (
                       <div 
                         key={item.id}
-                        className="bg-white rounded-3xl p-3 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition group"
+                        className="bg-white rounded-3xl p-3 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition group h-[240px]"
                       >
                         <div>
-                          {/* Photo with Available overlay */}
-                          <div className="relative rounded-2xl overflow-hidden aspect-4/3 bg-gray-50 mb-2.5">
+                          {/* Photo with Available overlay - Fixed Uniform Size */}
+                          <div className="w-full h-32 relative rounded-2xl overflow-hidden bg-gray-100 mb-2.5 shrink-0">
                             <img 
                               src={item.image} 
                               alt={item.name} 
-                              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                              className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
                             />
-                            <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-xs text-[10px] font-bold text-gray-600 px-2 py-0.5 rounded-full border border-gray-100">
+                            <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-xs text-[10px] font-bold text-gray-600 px-2 py-0.5 rounded-full border border-gray-100 shadow-2xs">
                               Available: {12 - idx * 2}
                             </span>
                           </div>
 
-                          <h3 className="font-bold text-xs text-gray-900 line-clamp-1 leading-snug">
+                          <h3 className="font-bold text-xs text-gray-900 truncate leading-snug">
                             {item.name}
                           </h3>
                           <div className="flex items-baseline space-x-1.5 mt-0.5">
@@ -733,7 +733,7 @@ export default function CashierPage() {
                         </div>
 
                         {/* Order button or Stepper */}
-                        <div className="pt-2 mt-2 border-t border-gray-50">
+                        <div className="pt-2 border-t border-gray-50 shrink-0">
                           {inCart ? (
                             <div className="flex items-center justify-between bg-gray-100 rounded-full p-1">
                               <button 
@@ -807,22 +807,22 @@ export default function CashierPage() {
                     return (
                       <div
                         key={item.id}
-                        className="bg-white rounded-3xl p-3 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition group"
+                        className="bg-white rounded-3xl p-3 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition group h-[240px]"
                       >
                         <div>
-                          {/* Image with Available overlay */}
-                          <div className="relative rounded-2xl overflow-hidden aspect-4/3 bg-gray-50 mb-2.5">
+                          {/* Image with Available overlay - Fixed Uniform Size */}
+                          <div className="w-full h-32 relative rounded-2xl overflow-hidden bg-gray-100 mb-2.5 shrink-0">
                             <img 
                               src={item.image} 
                               alt={item.name} 
-                              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                              className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
                             />
-                            <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-xs text-[10px] font-bold text-gray-600 px-2 py-0.5 rounded-full border border-gray-100">
+                            <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-xs text-[10px] font-bold text-gray-600 px-2 py-0.5 rounded-full border border-gray-100 shadow-2xs">
                               Available: {21 - (idx % 10)}
                             </span>
                           </div>
 
-                          <h3 className="font-bold text-xs text-gray-900 line-clamp-1 leading-snug">
+                          <h3 className="font-bold text-xs text-gray-900 truncate leading-snug">
                             {item.name}
                           </h3>
                           <p className="text-[10px] text-gray-400 mt-0.5">Price per portion</p>
@@ -832,7 +832,7 @@ export default function CashierPage() {
                         </div>
 
                         {/* Order button or Stepper */}
-                        <div className="pt-2 mt-2 border-t border-gray-50">
+                        <div className="pt-2 border-t border-gray-50 shrink-0">
                           {inCart ? (
                             <div className="flex items-center justify-between bg-gray-100 rounded-full p-1">
                               <button 
@@ -968,11 +968,13 @@ export default function CashierPage() {
                           key={item.menu_id}
                           className="p-2.5 bg-[#F8F9FA] rounded-2xl border border-gray-100 flex items-center justify-between gap-2.5"
                         >
-                          <img 
-                            src={foundMenu?.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=80'} 
-                            alt={item.menu_name}
-                            className="w-11 h-11 rounded-xl object-cover shrink-0" 
-                          />
+                          <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                            <img 
+                              src={foundMenu?.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=80'} 
+                              alt={item.menu_name}
+                              className="w-full h-full object-cover object-center" 
+                            />
+                          </div>
                           <div className="grow min-w-0">
                             <h4 className="font-bold text-xs text-gray-900 truncate">{item.menu_name}</h4>
                             <p className="text-[11px] font-bold text-emerald-600 font-mono mt-0.5">
