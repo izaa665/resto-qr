@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Rasa Nusantara - Sistem Pesanan Resto QR & Kasir',
-  description: 'Aplikasi pemesanan makanan berbasis QR Code di meja terintegrasi dengan Kasir & Dashboard Owner',
+  title: 'Kans Resto - Sistem Pesanan Resto QR & Kasir POS',
+  description: 'Aplikasi pemesanan makanan berbasis QR Code di meja terintegrasi dengan Kasir & Layar Dapur KDS',
 };
 
 export default function RootLayout({

@@ -113,7 +113,7 @@ function StatusContent() {
     }
   }, [order?.table_number, queryTable]);
 
-  // Realtime Supabase listener
+  // Realtime Supabase listener with local fallback
   useEffect(() => {
     if (!order) return;
 
@@ -123,7 +123,7 @@ function StatusContent() {
         .on(
           'postgres_changes',
           {
-            event: 'UPDATE',
+            event: '*',
             schema: 'public',
             table: 'orders',
             filter: `id=eq.${order.id}`
@@ -139,6 +139,13 @@ function StatusContent() {
       return () => {
         supabase.removeChannel(channel);
       };
+    } else {
+      const interval = setInterval(async () => {
+        const all = await fetchOrders();
+        const updated = all.find(o => o.id === order.id);
+        if (updated) setOrder(updated);
+      }, 2500);
+      return () => clearInterval(interval);
     }
   }, [order?.id]);
 
@@ -361,17 +368,17 @@ function StatusContent() {
             </div>
 
             <h3 className="text-lg sm:text-2xl font-black tracking-tight">
-              {order.order_status === 'pending' && 'Pesanan Telah Diterima Dapur 📋'}
-              {order.order_status === 'processing' && 'Sedang Dimasak Koki di Dapur 🍳'}
-              {order.order_status === 'ready' && 'Makanan Siap Disajikan ke Meja Anda! 🍽️'}
-              {order.order_status === 'completed' && 'Pesanan Selesai. Selamat Menikmati! ✨'}
+              {order.order_status === 'pending' && 'Pesanan Masuk Antrean Dapur'}
+              {order.order_status === 'processing' && 'Dapur Sedang Menyiapkan Pesanan'}
+              {order.order_status === 'ready' && 'Pesanan Siap Disajikan ke Meja'}
+              {order.order_status === 'completed' && 'Pesanan Telah Selesai'}
             </h3>
 
             <p className="text-xs opacity-85 max-w-md mx-auto leading-relaxed">
-              {order.order_status === 'pending' && 'Tiket Anda telah terkirim dan masuk ke antrean KDS dapur.'}
-              {order.order_status === 'processing' && 'Koki kami sedang mengolah hidangan segar Anda dengan bumbu istimewa.'}
-              {order.order_status === 'ready' && 'Pelayan sedang membawakan hidangan langsung ke meja Anda.'}
-              {order.order_status === 'completed' && 'Terima kasih telah berkunjung ke restoran kami.'}
+              {order.order_status === 'pending' && 'Tiket pesanan Anda sudah diterima sistem dapur KDS.'}
+              {order.order_status === 'processing' && 'Tim dapur sedang memasak hidangan pesanan Anda.'}
+              {order.order_status === 'ready' && 'Pelayan sedang mengantarkan hidangan ke nomor meja Anda.'}
+              {order.order_status === 'completed' && 'Terima kasih, selamat menikmati hidangan Anda.'}
             </p>
           </div>
 

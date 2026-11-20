@@ -393,17 +393,17 @@ export default function AdminPage() {
   // Format today date e.g. "05 Jul 2026"
   const formattedToday = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
-  // Navigation Items matching the exact design
+  // Navigation Items
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
-    { id: 'menus', label: 'Menu Items', icon: Utensils, badge: menus.length },
-    { id: 'categories', label: 'Categories', icon: Tags },
-    { id: 'orders', label: 'Orders', icon: Receipt, badge: orders.length },
-    { id: 'customers', label: 'Customers', icon: Users, badge: totalCustomers },
-    { id: 'expenses', label: 'Inventory', icon: Wallet },
-    { id: 'tables', label: 'Tables & QR', icon: QrCode, badge: tables.length },
-    { id: 'users', label: 'Staff & Shift', icon: Shield, badge: users.length },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'menus', label: 'Daftar Menu', icon: Utensils, badge: menus.length },
+    { id: 'categories', label: 'Kategori', icon: Tags },
+    { id: 'orders', label: 'Pesanan', icon: Receipt, badge: orders.length },
+    { id: 'customers', label: 'Pelanggan', icon: Users, badge: totalCustomers },
+    { id: 'expenses', label: 'Pengeluaran', icon: Wallet },
+    { id: 'tables', label: 'Meja & QR', icon: QrCode, badge: tables.length },
+    { id: 'users', label: 'Staf & Shift', icon: Shield, badge: users.length },
+    { id: 'settings', label: 'Pengaturan', icon: Settings }
   ];
 
   // Admin Auth Gate Screen
@@ -422,9 +422,9 @@ export default function AdminPage() {
             </div>
             <div>
               <div className="flex items-center justify-center gap-2">
-                <span className="font-extrabold text-xl tracking-tight text-gray-900">Food<span className="text-[#FF5B26]">Analytics</span></span>
+                <span className="font-extrabold text-xl tracking-tight text-gray-900">{setting?.name || 'Kans Resto'}</span>
               </div>
-              <p className="text-xs text-gray-400 mt-1 font-medium">Smart Food Insights • Admin Login</p>
+              <p className="text-xs text-gray-400 mt-1 font-medium">Panel Manajemen Restoran • Login</p>
             </div>
           </div>
 
@@ -561,7 +561,7 @@ export default function AdminPage() {
         />
       )}
 
-      {/* Modern Left Sidebar matching FoodAnalytics */}
+      {/* Modern Left Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-60 bg-white flex flex-col border-r border-gray-100 transition-transform duration-200 ease-in-out lg:translate-x-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
@@ -569,14 +569,14 @@ export default function AdminPage() {
         {/* Logo & Brand Header */}
         <div className="p-5 pb-4 flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#FF5B26] flex items-center justify-center text-white shadow-md shadow-[#FF5B26]/25">
-              <Utensils className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-[#FF5B26] flex items-center justify-center text-white shadow-md shadow-[#FF5B26]/25 font-black text-sm">
+              KR
             </div>
             <div>
               <div className="flex items-center text-[15px] font-extrabold tracking-tight text-gray-900 leading-none">
-                Food<span className="text-[#FF5B26]">Analytics</span>
+                {setting?.name || 'Kans Resto'}
               </div>
-              <p className="text-[10px] text-gray-400 font-medium mt-0.5">Smart Food Insights</p>
+              <p className="text-[10px] text-gray-400 font-medium mt-0.5">Admin & POS Panel</p>
             </div>
           </div>
           <button 
@@ -622,23 +622,28 @@ export default function AdminPage() {
           })}
         </nav>
 
-        {/* Upgrade to Pro Sidebar Banner */}
-        <div className="p-3 mx-3 mb-4 rounded-2xl bg-gradient-to-b from-[#FFF5F1] to-[#FFEFE8] border border-[#FFD9CA] text-center space-y-2 relative overflow-hidden">
-          <div className="w-12 h-12 mx-auto rounded-full bg-white shadow-sm flex items-center justify-center">
-            <span className="text-2xl">🥗</span>
+        {/* Quick Operational Shortcuts */}
+        <div className="p-3.5 mx-3 mb-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-2.5">
+          <div className="flex items-center space-x-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-[11px] font-bold text-gray-700">Akses Cepat Sistem</span>
           </div>
-          <div>
-            <h4 className="font-bold text-xs text-gray-900">Upgrade to Pro</h4>
-            <p className="text-[10px] text-gray-500 mt-0.5 leading-snug">
-              Unlock advanced insights and grow your food business.
-            </p>
+          <div className="space-y-1.5">
+            <Link
+              href="/kasir"
+              className="w-full bg-white hover:bg-gray-100 text-gray-800 border border-gray-200 font-bold py-1.5 px-3 rounded-xl text-[11px] flex items-center justify-between transition shadow-2xs"
+            >
+              <span>Layar Kasir (POS)</span>
+              <ArrowUpRight className="w-3 h-3 text-gray-400" />
+            </Link>
+            <Link
+              href="/dapur"
+              className="w-full bg-white hover:bg-gray-100 text-gray-800 border border-gray-200 font-bold py-1.5 px-3 rounded-xl text-[11px] flex items-center justify-between transition shadow-2xs"
+            >
+              <span>Layar Dapur (KDS)</span>
+              <ArrowUpRight className="w-3 h-3 text-gray-400" />
+            </Link>
           </div>
-          <button 
-            onClick={() => setActiveTab('orders')}
-            className="w-full bg-[#FF5B26] hover:bg-[#E84E1C] text-white font-bold py-2 rounded-xl text-[11px] shadow-sm transition active:scale-98"
-          >
-            Upgrade Now
-          </button>
         </div>
 
       </aside>
@@ -665,7 +670,7 @@ export default function AdminPage() {
               <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search food, orders, customers..."
+                placeholder="Cari menu, pesanan, atau pelanggan..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="w-full bg-[#F8F9FA] border border-gray-100 rounded-full pl-9 pr-4 py-2 text-xs text-gray-800 placeholder-gray-400 focus:bg-white focus:outline-none focus:border-[#FF5B26] transition"
@@ -800,15 +805,15 @@ export default function AdminPage() {
                       <div className="w-7 h-7 rounded-lg bg-[#FF8A00]/10 flex items-center justify-center text-[#FF8A00]">
                         <ShoppingBag className="w-3.5 h-3.5" />
                       </div>
-                      <span className="text-[11px] font-semibold text-gray-500">Total Orders</span>
+                      <span className="text-[11px] font-semibold text-gray-500">Total Pesanan</span>
                     </div>
                     <h3 className="text-xl font-black text-gray-900 tracking-tight">
-                      {totalOrdersCount > 0 ? totalOrdersCount : '168'}
+                      {totalOrdersCount}
                     </h3>
                     <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
                       <ArrowUp className="w-3 h-3" />
                       <span>6.2%</span>
-                      <span className="text-gray-400 font-normal ml-0.5">vs Yesterday</span>
+                      <span className="text-gray-400 font-normal ml-0.5">vs Kemarin</span>
                     </p>
                   </div>
                   {/* Mini Sparkline SVG */}
@@ -832,15 +837,15 @@ export default function AdminPage() {
                       <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600">
                         <Users className="w-3.5 h-3.5" />
                       </div>
-                      <span className="text-[11px] font-semibold text-gray-500">New Customers</span>
+                      <span className="text-[11px] font-semibold text-gray-500">Jumlah Pelanggan</span>
                     </div>
                     <h3 className="text-xl font-black text-gray-900 tracking-tight">
-                      {totalCustomers > 0 ? totalCustomers : '52'}
+                      {totalCustomers}
                     </h3>
                     <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
                       <ArrowUp className="w-3 h-3" />
                       <span>4.1%</span>
-                      <span className="text-gray-400 font-normal ml-0.5">vs Yesterday</span>
+                      <span className="text-gray-400 font-normal ml-0.5">vs Kemarin</span>
                     </p>
                   </div>
                   {/* Mini Sparkline SVG */}
@@ -899,11 +904,11 @@ export default function AdminPage() {
                   {/* Header */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2">
                     <div>
-                      <h3 className="font-bold text-sm text-gray-900">Revenue & Orders Trend</h3>
+                      <h3 className="font-bold text-sm text-gray-900">Tren Pendapatan & Pesanan</h3>
                     </div>
 
                     <div className="flex items-center space-x-3">
-                      {/* Pill filter: Today, This Week, This Month */}
+                      {/* Pill filter: Hari Ini, Minggu Ini, Bulan Ini */}
                       <div className="bg-gray-100 p-0.5 rounded-full flex items-center text-[11px] font-semibold">
                         <button
                           onClick={() => setTrendRange('today')}
@@ -911,7 +916,7 @@ export default function AdminPage() {
                             trendRange === 'today' ? 'bg-[#FF5B26] text-white shadow-xs' : 'text-gray-500 hover:text-gray-900'
                           }`}
                         >
-                          Today
+                          Hari Ini
                         </button>
                         <button
                           onClick={() => setTrendRange('week')}
@@ -919,7 +924,7 @@ export default function AdminPage() {
                             trendRange === 'week' ? 'bg-[#FF5B26] text-white shadow-xs' : 'text-gray-500 hover:text-gray-900'
                           }`}
                         >
-                          This Week
+                          Minggu Ini
                         </button>
                         <button
                           onClick={() => setTrendRange('month')}
@@ -927,13 +932,13 @@ export default function AdminPage() {
                             trendRange === 'month' ? 'bg-[#FF5B26] text-white shadow-xs' : 'text-gray-500 hover:text-gray-900'
                           }`}
                         >
-                          This Month
+                          Bulan Ini
                         </button>
                       </div>
 
                       {/* Dropdown */}
                       <span className="text-[11px] font-semibold text-gray-600 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200">
-                        This Week ▾
+                        {trendRange === 'today' ? 'Hari Ini' : trendRange === 'week' ? 'Minggu Ini' : 'Bulan Ini'} ▾
                       </span>
                     </div>
                   </div>
@@ -1081,9 +1086,9 @@ export default function AdminPage() {
                 <div className="lg:col-span-5 xl:col-span-4 bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between space-y-4">
                   {/* Header */}
                   <div className="flex items-center justify-between pb-1">
-                    <h3 className="font-bold text-sm text-gray-900">Orders by Category</h3>
+                    <h3 className="font-bold text-sm text-gray-900">Penjualan per Kategori</h3>
                     <span className="text-[11px] font-semibold text-gray-600 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200">
-                      This Week ▾
+                      Semua Menu ▾
                     </span>
                   </div>
 
@@ -1218,12 +1223,12 @@ export default function AdminPage() {
                 {/* 1. Top Selling Dishes (4 cols) */}
                 <div className="xl:col-span-4 bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4 flex flex-col justify-between">
                   <div className="flex items-center justify-between pb-1">
-                    <h3 className="font-bold text-sm text-gray-900">Top Selling Dishes</h3>
+                    <h3 className="font-bold text-sm text-gray-900">Menu Paling Laris</h3>
                     <button 
                       onClick={() => setActiveTab('menus')}
                       className="text-xs font-semibold text-gray-400 hover:text-[#FF5B26] transition"
                     >
-                      View All
+                      Lihat Semua
                     </button>
                   </div>
 
@@ -1237,11 +1242,14 @@ export default function AdminPage() {
                           <img 
                             src={dish.image} 
                             alt={dish.name}
+                            onError={(e) => { 
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120&auto=format&fit=crop&q=80'; 
+                            }}
                             className="w-9 h-9 rounded-full object-cover border border-gray-100" 
                           />
                           <div>
                             <p className="font-bold text-gray-900 line-clamp-1">{dish.name}</p>
-                            <p className="text-[10px] text-gray-400">{dish.qty} Orders</p>
+                            <p className="text-[10px] text-gray-400">{dish.qty} Pesanan</p>
                           </div>
                         </div>
                         <span className="font-bold text-gray-900 font-mono">
@@ -1255,9 +1263,9 @@ export default function AdminPage() {
                 {/* 2. Order Status (4 cols) */}
                 <div className="xl:col-span-4 bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4 flex flex-col justify-between">
                   <div className="flex items-center justify-between pb-1">
-                    <h3 className="font-bold text-sm text-gray-900">Order Status</h3>
+                    <h3 className="font-bold text-sm text-gray-900">Status Pesanan</h3>
                     <span className="text-[11px] font-semibold text-gray-600 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200">
-                      This Week ▾
+                      Hari Ini ▾
                     </span>
                   </div>
 
@@ -1314,35 +1322,35 @@ export default function AdminPage() {
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                         {completedPct}%
                       </p>
-                      <p className="text-sm font-black text-gray-900 mt-0.5">{completedOrders || 108}</p>
-                      <p className="text-[9px] text-gray-400 font-medium">Completed</p>
+                      <p className="text-sm font-black text-gray-900 mt-0.5">{completedOrders}</p>
+                      <p className="text-[9px] text-gray-400 font-medium">Selesai</p>
                     </div>
 
                     <div>
                       <p className="text-[10px] font-bold text-amber-500 flex items-center justify-center gap-0.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                        {preparingPct || 22}%
+                        {preparingPct}%
                       </p>
-                      <p className="text-sm font-black text-gray-900 mt-0.5">{preparingOrders || 37}</p>
-                      <p className="text-[9px] text-gray-400 font-medium">Preparing</p>
+                      <p className="text-sm font-black text-gray-900 mt-0.5">{preparingOrders}</p>
+                      <p className="text-[9px] text-gray-400 font-medium">Dimasak</p>
                     </div>
 
                     <div>
                       <p className="text-[10px] font-bold text-[#FF5B26] flex items-center justify-center gap-0.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#FF5B26]"></span>
-                        {pendingPct || 10}%
+                        {pendingPct}%
                       </p>
-                      <p className="text-sm font-black text-gray-900 mt-0.5">{pendingOrders || 17}</p>
-                      <p className="text-[9px] text-gray-400 font-medium">Pending</p>
+                      <p className="text-sm font-black text-gray-900 mt-0.5">{pendingOrders}</p>
+                      <p className="text-[9px] text-gray-400 font-medium">Menunggu</p>
                     </div>
 
                     <div>
                       <p className="text-[10px] font-bold text-rose-500 flex items-center justify-center gap-0.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                        {cancelledPct || 4}%
+                        {cancelledPct}%
                       </p>
-                      <p className="text-sm font-black text-gray-900 mt-0.5">{cancelledOrders || 6}</p>
-                      <p className="text-[9px] text-gray-400 font-medium">Cancelled</p>
+                      <p className="text-sm font-black text-gray-900 mt-0.5">{cancelledOrders}</p>
+                      <p className="text-[9px] text-gray-400 font-medium">Batal</p>
                     </div>
                   </div>
                 </div>
@@ -1351,36 +1359,36 @@ export default function AdminPage() {
                 <div className="xl:col-span-4 bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4 flex flex-col justify-between">
                   <div className="flex items-center space-x-2 pb-1">
                     <span className="text-base">💡</span>
-                    <h3 className="font-bold text-sm text-gray-900">Business Insights</h3>
+                    <h3 className="font-bold text-sm text-gray-900">Ringkasan Operasional</h3>
                   </div>
 
                   {/* 2x2 Metric Grid */}
                   <div className="grid grid-cols-2 gap-4 py-1 text-xs">
                     <div className="space-y-0.5">
-                      <p className="text-[11px] text-gray-400 font-medium">Revenue</p>
+                      <p className="text-[11px] text-gray-400 font-medium">Pertumbuhan Omzet</p>
                       <p className="font-bold text-emerald-600 flex items-center gap-1">
                         <ArrowUp className="w-3 h-3" />
                         <span>8.2%</span>
                       </p>
-                      <p className="text-[10px] text-gray-400">vs Yesterday</p>
+                      <p className="text-[10px] text-gray-400">vs Kemarin</p>
                     </div>
 
                     <div className="space-y-0.5">
-                      <p className="text-[11px] text-gray-400 font-medium">Top Item</p>
+                      <p className="text-[11px] text-gray-400 font-medium">Menu Teratas</p>
                       <p className="font-bold text-gray-900 truncate">
                         {bestSellers[0]?.name || (menus[0]?.name || 'Nasi Goreng Spesial')}
                       </p>
                     </div>
 
                     <div className="space-y-0.5 pt-2 border-t border-gray-50">
-                      <p className="text-[11px] text-gray-400 font-medium">Best Seller</p>
+                      <p className="text-[11px] text-gray-400 font-medium">Paling Banyak Dipesan</p>
                       <p className="font-bold text-gray-900 truncate">
                         {bestSellers[1]?.name || (menus[1]?.name || 'Ayam Bakar Madu')}
                       </p>
                     </div>
 
                     <div className="space-y-0.5 pt-2 border-t border-gray-50">
-                      <p className="text-[11px] text-gray-400 font-medium">Peak Hour</p>
+                      <p className="text-[11px] text-gray-400 font-medium">Jam Ramai Resto</p>
                       <p className="font-bold text-gray-900">
                         12:00 – 14:00 WIB
                       </p>
@@ -1425,6 +1433,9 @@ export default function AdminPage() {
                     <img 
                       src={item.image} 
                       alt={item.name} 
+                      onError={(e) => { 
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120&auto=format&fit=crop&q=80'; 
+                      }}
                       className="w-20 h-20 rounded-2xl object-cover bg-gray-100 shrink-0" 
                     />
                     <div className="flex flex-col justify-between grow min-w-0">
@@ -1743,7 +1754,7 @@ export default function AdminPage() {
                   <label className="block font-semibold text-gray-700 mb-1">Nama Restoran</label>
                   <input
                     type="text"
-                    defaultValue={setting?.name || 'Rasa Nusantara'}
+                    defaultValue={setting?.name || 'Kans Resto'}
                     disabled
                     className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-3.5 py-2.5 text-xs text-gray-600"
                   />

@@ -225,6 +225,8 @@ export default function CashierPage() {
         .channel('cashier-pos-live')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => loadAll())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'waiter_calls' }, () => loadAll())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'menus' }, () => loadAll())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurant_tables' }, () => loadAll())
         .subscribe();
 
       return () => {
@@ -605,7 +607,7 @@ export default function CashierPage() {
             <div className="relative w-44 sm:w-64">
               <input
                 type="text"
-                placeholder="Find food or beverages"
+                placeholder="Cari menu makanan atau minuman..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="w-full bg-[#F5F6F8] border border-gray-200 rounded-full pl-4 pr-9 py-2 text-xs text-gray-800 placeholder-gray-400 focus:bg-white focus:outline-hidden focus:border-orange-500 transition"
@@ -714,6 +716,9 @@ export default function CashierPage() {
                             <img 
                               src={item.image} 
                               alt={item.name} 
+                              onError={(e) => { 
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=80'; 
+                              }}
                               className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
                             />
                             <span className="absolute top-2 left-2 bg-white/95 backdrop-blur-xs text-[10px] font-bold text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-100 shadow-2xs flex items-center gap-1">
@@ -814,6 +819,9 @@ export default function CashierPage() {
                             <img 
                               src={item.image} 
                               alt={item.name} 
+                              onError={(e) => { 
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=80'; 
+                              }}
                               className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
                             />
                             <span className="absolute top-2 left-2 bg-white/95 backdrop-blur-xs text-[10px] font-bold text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-100 shadow-2xs flex items-center gap-1">

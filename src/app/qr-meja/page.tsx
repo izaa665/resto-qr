@@ -179,7 +179,7 @@ export default function TableQRGeneratorPage() {
             >
               {/* Card Header */}
               <div className="w-full pb-3 border-b border-neutral-100 flex items-center justify-between text-[11px]">
-                <span className="font-bold tracking-wider uppercase text-neutral-900">Rasa Nusantara</span>
+                <span className="font-bold tracking-wider uppercase text-neutral-900">Kans Resto</span>
                 <span className="text-neutral-400 font-mono">DINE-IN</span>
               </div>
 

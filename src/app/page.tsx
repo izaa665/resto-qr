@@ -77,37 +77,62 @@ function CustomerOrderContent() {
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [wifiCopied, setWifiCopied] = useState(false);
 
-  useEffect(() => {
-    async function loadData() {
-      const [cats, mns, tbls, st] = await Promise.all([
-        fetchCategories(),
-        fetchMenus(),
-        fetchTables(),
-        fetchSetting()
-      ]);
-      setCategories(cats);
-      setMenus(mns);
-      setTables(tbls);
-      setSetting(st);
-    }
-    loadData();
-  }, []);
-
-  // Restore active order from localStorage on mount
-  useEffect(() => {
+  // Real-time synchronization
+  const checkActiveOrder = async () => {
     try {
       const savedOrderId = localStorage.getItem('resto_active_order_id');
       if (savedOrderId) {
-        fetchOrders().then(all => {
-          const found = all.find(o => String(o.id) === savedOrderId);
-          if (found && found.order_status !== 'completed' && found.order_status !== 'cancelled') {
-            setActiveOrder(found);
-          } else {
-            localStorage.removeItem('resto_active_order_id');
-          }
-        });
+        const all = await fetchOrders();
+        const found = all.find(o => String(o.id) === savedOrderId);
+        if (found && found.order_status !== 'completed' && found.order_status !== 'cancelled') {
+          setActiveOrder(found);
+        } else if (found && (found.order_status === 'completed' || found.order_status === 'cancelled')) {
+          setActiveOrder(null);
+          localStorage.removeItem('resto_active_order_id');
+        }
       }
     } catch (e) {}
+  };
+
+  const loadData = async () => {
+    const [cats, mns, tbls, st] = await Promise.all([
+      fetchCategories(),
+      fetchMenus(),
+      fetchTables(),
+      fetchSetting()
+    ]);
+    setCategories(cats);
+    setMenus(mns);
+    setTables(tbls);
+    setSetting(st);
+  };
+
+  useEffect(() => {
+    loadData();
+    checkActiveOrder();
+
+    if (isSupabaseConfigured && supabase) {
+      const channel = supabase
+        .channel('customer-menu-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'menus' }, () => loadData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => loadData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurant_settings' }, () => loadData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+          loadData();
+          checkActiveOrder();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } else {
+      const interval = setInterval(() => {
+        loadData();
+        checkActiveOrder();
+      }, 3000);
+      return () => clearInterval(interval);
+    }
   }, []);
 
   const handleSendWaiterCall = async (callType: string) => {
@@ -242,7 +267,7 @@ function CustomerOrderContent() {
               <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-gray-900 truncate">
                 {setting?.name || 'Kans Resto'}
               </h1>
-              <p className="text-[10px] text-gray-400 font-medium hidden sm:block">Dine-in Smart Menu & Ordering</p>
+              <p className="text-[10px] text-gray-400 font-medium hidden sm:block">Menu Digital & Pesan Mandiri</p>
             </div>
           </div>
 
@@ -366,24 +391,28 @@ function CustomerOrderContent() {
 
         {/* Responsive Food Menu Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
-          {filteredMenus.map((item, idx) => {
+          {filteredMenus.map((item) => {
             const inCart = cart.find(c => c.menu_id === item.id);
 
             return (
               <div
                 key={item.id}
-                className="bg-white rounded-3xl p-3.5 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition group"
+                className="bg-white rounded-3xl p-3.5 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition group h-[310px]"
               >
                 <div>
-                  {/* Photo Container */}
-                  <div className="relative rounded-2xl overflow-hidden aspect-4/3 bg-gray-100 mb-3">
+                  {/* Photo Container - Fixed Uniform Proportions */}
+                  <div className="w-full h-36 relative rounded-2xl overflow-hidden bg-gray-100 mb-3 shrink-0">
                     <img 
                       src={item.image} 
                       alt={item.name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      onError={(e) => { 
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=80'; 
+                      }}
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
                     />
-                    <span className="absolute top-2.5 left-2.5 bg-white/95 backdrop-blur-xs text-[10px] font-bold text-gray-700 px-2.5 py-0.5 rounded-full border border-gray-100 shadow-2xs">
-                      {idx % 3 === 0 ? "Chef's Pick" : "Tersedia"}
+                    <span className="absolute top-2.5 left-2.5 bg-white/95 backdrop-blur-xs text-[10px] font-bold text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-100 shadow-2xs flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      Tersedia
                     </span>
                   </div>
 
@@ -392,7 +421,7 @@ function CustomerOrderContent() {
                     {item.name}
                   </h3>
                   <p className="text-xs text-gray-400 mt-1 line-clamp-2 leading-relaxed">
-                    {item.description || 'Pilihan lezat dengan bahan segar dan rempah istimewa.'}
+                    {item.description || 'Pilihan menu lezat disajikan hangat dan higienis.'}
                   </p>
                 </div>
 
