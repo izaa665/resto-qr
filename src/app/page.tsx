@@ -25,7 +25,10 @@ import {
   Sparkles,
   UtensilsCrossed,
   Flame,
-  Coffee
+  Coffee,
+  Heart,
+  Share2,
+  PhoneCall
 } from 'lucide-react';
 import { Category, MenuItem, OrderItem, RestaurantTable, Order, RestaurantSetting } from '@/types/database';
 import { 
@@ -44,9 +47,9 @@ import { formatRupiah } from '@/lib/utils';
 function CustomerOrderContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTableParam = parseInt(searchParams.get('meja') || '5', 10);
+  const initialTableParam = parseInt(searchParams.get('meja') || '1', 10);
 
-  const [tableNumber, setTableNumber] = useState<number>(initialTableParam > 0 ? initialTableParam : 5);
+  const [tableNumber, setTableNumber] = useState<number>(initialTableParam > 0 ? initialTableParam : 1);
   const [categories, setCategories] = useState<Category[]>([]);
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [tables, setTables] = useState<RestaurantTable[]>([]);
@@ -106,35 +109,6 @@ function CustomerOrderContent() {
       }
     } catch (e) {}
   }, []);
-
-  // Realtime active order status listener
-  useEffect(() => {
-    if (!activeOrder) return;
-
-    if (isSupabaseConfigured && supabase) {
-      const channel = supabase
-        .channel(`order-track-home-${activeOrder.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'orders',
-            filter: `id=eq.${activeOrder.id}`
-          },
-          (payload: any) => {
-            if (payload.new) {
-              setActiveOrder(prev => (prev ? { ...prev, ...payload.new } : payload.new));
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [activeOrder?.id]);
 
   const handleSendWaiterCall = async (callType: string) => {
     setIsSendingCall(true);
@@ -230,7 +204,7 @@ function CustomerOrderContent() {
         setCart([]);
         setIsCartOpen(false);
 
-        // Masuk langsung ke halaman status pesanan baru!
+        // Redirect immediately to the dedicated tracking page
         router.push(`/status?id=${result.order.id}&meja=${tableNumber}`);
       } else {
         alert(result.error || 'Gagal mengirim pesanan');
@@ -253,195 +227,209 @@ function CustomerOrderContent() {
   });
 
   return (
-    <div className="bg-[#FAF8F5] min-h-screen text-[#1A1816] pb-28 selection:bg-stone-900 selection:text-amber-300">
+    <div className="bg-[#F8F9FA] min-h-screen text-gray-900 font-sans antialiased selection:bg-orange-500 selection:text-white pb-32">
       
       {/* Top Navbar */}
-      <header className="sticky top-0 z-30 glass-panel border-b border-stone-200/80 px-4 py-3 shadow-warm-sm">
-        <div className="max-w-md mx-auto flex items-center justify-between">
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100 px-4 sm:px-8 py-3.5 shadow-xs">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           
           {/* Brand Identity */}
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-stone-900 text-amber-400 flex items-center justify-center font-black text-sm shadow-warm-sm">
-              <UtensilsCrossed className="w-4 h-4" />
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl bg-orange-500 text-white flex items-center justify-center font-black shadow-xs">
+              <UtensilsCrossed className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[9px] uppercase font-bold tracking-widest text-amber-700 block">
-                Artisan Kitchen & Brews
-              </span>
-              <h1 className="text-sm font-black tracking-tight text-stone-950 truncate max-w-[140px]">
-                {setting?.name || 'Rasa Nusantara'}
+              <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-gray-900 truncate">
+                {setting?.name || 'Kans Resto'}
               </h1>
+              <p className="text-[10px] text-gray-400 font-medium hidden sm:block">Dine-in Smart Menu & Ordering</p>
             </div>
           </div>
 
           {/* Quick Action Badges */}
           <div className="flex items-center space-x-2">
+            {/* Active order badge if exists */}
+            {activeOrder && (
+              <Link
+                href={`/status?id=${activeOrder.id}&meja=${tableNumber}`}
+                className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200 animate-pulse"
+              >
+                <Clock className="w-3.5 h-3.5 text-orange-600" />
+                <span>Lihat Status Pesanan</span>
+              </Link>
+            )}
+
+            {/* Waiter Call Button */}
             <button
               onClick={() => setIsCallWaiterOpen(true)}
-              className="flex items-center space-x-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 border border-amber-500/30 px-2.5 py-1.5 rounded-full text-xs font-bold transition shadow-2xs active:scale-95"
-              title="Panggil pelayan ke meja"
+              className="flex items-center space-x-1.5 bg-gray-50 hover:bg-orange-50 text-gray-700 hover:text-orange-600 border border-gray-200 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shadow-2xs"
             >
-              <Bell className="w-3.5 h-3.5 text-amber-600" />
+              <Bell className="w-3.5 h-3.5 text-orange-500" />
               <span>Panggil</span>
             </button>
 
-            {/* Table Badge */}
+            {/* Table Number Pill */}
             <button
               onClick={() => setIsTableModalOpen(true)}
-              className="flex items-center space-x-1.5 bg-stone-900 text-amber-300 hover:bg-stone-800 px-3 py-1.5 rounded-full text-xs font-black transition shadow-warm-sm active:scale-95 ring-2 ring-stone-900/10"
+              className="flex items-center space-x-1.5 bg-black hover:bg-gray-800 text-white px-3.5 py-1.5 rounded-full text-xs font-black transition active:scale-95 shadow-xs"
             >
-              <MapPin className="w-3.5 h-3.5 text-amber-400" />
+              <MapPin className="w-3.5 h-3.5 text-orange-400" />
               <span>Meja {tableNumber}</span>
             </button>
           </div>
+
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-md mx-auto px-4 pt-4 space-y-4">
+      {/* Main Content Area */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-8 pt-5 space-y-6">
 
-        {/* Ambient Greeting & Wi-Fi Banner */}
-        <div className="bg-gradient-to-br from-stone-900 to-stone-800 text-white p-4 sm:p-5 rounded-2xl shadow-warm-md relative overflow-hidden">
-          <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-32 h-32 rounded-full bg-amber-500/10 blur-2xl"></div>
-          
-          <div className="relative z-10 space-y-2">
-            <div className="flex items-center space-x-1.5 text-amber-400 text-[11px] font-bold uppercase tracking-wider">
+        {/* Ambient Hero Banner */}
+        <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-5 sm:p-7 rounded-3xl shadow-sm relative overflow-hidden">
+          <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-48 h-48 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
+
+          <div className="relative z-10 space-y-2 max-w-2xl">
+            <div className="flex items-center space-x-2 text-white/90 text-[11px] font-bold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Pemesanan Digital Meja {tableNumber}</span>
+              <span>Pemesanan Langsung Meja {tableNumber}</span>
             </div>
-            
-            <h2 className="text-base sm:text-lg font-black tracking-tight text-white leading-snug">
-              Cita Rasa Otentik, Disajikan Langsung ke Meja Anda.
+
+            <h2 className="text-xl sm:text-3xl font-black tracking-tight leading-tight">
+              Selamat Datang! Pilih Hidangan Favorit Anda.
             </h2>
-            
-            <p className="text-xs text-stone-300 leading-relaxed">
-              Pilih menu favorit Anda di bawah. Pesanan akan otomatis terkirim dan disiapkan segar oleh koki dapur.
+
+            <p className="text-xs sm:text-sm text-orange-100 font-medium">
+              Pesanan akan otomatis dikirim ke dapur dan disajikan langsung ke meja Anda.
             </p>
 
             {setting?.wifi_password && (
-              <div className="pt-1">
+              <div className="pt-2">
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(setting.wifi_password || '');
                     setWifiCopied(true);
                     setTimeout(() => setWifiCopied(false), 2000);
                   }}
-                  className="inline-flex items-center space-x-2 bg-stone-800/80 border border-stone-700/80 hover:bg-stone-700 text-stone-200 px-3 py-1.5 rounded-full text-[11px] font-medium transition"
+                  className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-xs hover:bg-white/30 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold transition"
                 >
-                  <Wifi className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Wi-Fi: <strong className="text-white font-mono">{setting.wifi_password}</strong></span>
-                  <span className="text-[10px] text-amber-400 font-bold ml-1">{wifiCopied ? '✓ Tersalin' : '(Salin)'}</span>
+                  <Wifi className="w-3.5 h-3.5" />
+                  <span>Wi-Fi: <strong className="font-mono">{setting.wifi_password}</strong></span>
+                  <span className="text-[10px] text-orange-200 font-bold">{wifiCopied ? '✓ Tersalin' : '(Salin)'}</span>
                 </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Cari menu, kopi, atau camilan lezat..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white border border-stone-200/90 rounded-2xl pl-10 pr-4 py-3 text-xs text-stone-900 placeholder:text-stone-400 focus:outline-hidden focus:border-stone-900 focus:ring-1 focus:ring-stone-900 shadow-warm-sm transition"
-          />
-        </div>
+        {/* Search & Categories Bar */}
+        <div className="space-y-3">
+          {/* Search Box */}
+          <div className="relative">
+            <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Cari makanan, minuman segar, atau cemilan favorit..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white border border-gray-200 rounded-full pl-11 pr-4 py-3 text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-black shadow-xs transition"
+            />
+          </div>
 
-        {/* Category Navigation Pills */}
-        <div className="flex space-x-2 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4">
-          <button
-            onClick={() => setActiveCategory('all')}
-            className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition shadow-2xs ${
-              activeCategory === 'all'
-                ? 'bg-stone-900 text-white shadow-warm-sm ring-2 ring-stone-900/10'
-                : 'bg-white text-stone-600 hover:bg-stone-100 border border-stone-200/80'
-            }`}
-          >
-            Semua Menu
-          </button>
-          {categories.map(cat => (
+          {/* Categories Pills */}
+          <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar py-1">
             <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition shadow-2xs ${
-                activeCategory === cat.id
-                  ? 'bg-stone-900 text-white shadow-warm-sm ring-2 ring-stone-900/10'
-                  : 'bg-white text-stone-600 hover:bg-stone-100 border border-stone-200/80'
+              onClick={() => setActiveCategory('all')}
+              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition ${
+                activeCategory === 'all'
+                  ? 'bg-black text-white shadow-xs'
+                  : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200'
               }`}
             >
-              {cat.name}
+              Semua Menu
             </button>
-          ))}
+
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition ${
+                  activeCategory === cat.id
+                    ? 'bg-black text-white shadow-xs'
+                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200'
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Menu Items Grid */}
-        <div className="space-y-3 pt-1">
-          {filteredMenus.map(menu => {
-            const inCart = cart.find(c => c.menu_id === menu.id);
+        {/* Responsive Food Menu Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+          {filteredMenus.map((item, idx) => {
+            const inCart = cart.find(c => c.menu_id === item.id);
+
             return (
               <div
-                key={menu.id}
-                className="bg-white rounded-2xl p-3.5 border border-stone-200/80 shadow-warm-sm hover:shadow-warm-md flex gap-3.5 items-center justify-between transition-all"
+                key={item.id}
+                className="bg-white rounded-3xl p-3.5 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition group"
               >
-                {/* Photo & Description */}
-                <div className="flex items-center space-x-3.5 grow min-w-0">
-                  <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-stone-100 shadow-inner">
-                    <img
-                      src={menu.image}
-                      alt={menu.name}
-                      className="w-full h-full object-cover transition duration-300 hover:scale-105"
-                      loading="lazy"
+                <div>
+                  {/* Photo Container */}
+                  <div className="relative rounded-2xl overflow-hidden aspect-4/3 bg-gray-100 mb-3">
+                    <img 
+                      src={item.image} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />
-                    {menu.price > 25000 && (
-                      <span className="absolute top-1 left-1 bg-stone-900/85 backdrop-blur-xs text-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                        <Flame className="w-2.5 h-2.5 text-amber-400" />
-                        Chef's Pick
-                      </span>
-                    )}
+                    <span className="absolute top-2.5 left-2.5 bg-white/95 backdrop-blur-xs text-[10px] font-bold text-gray-700 px-2.5 py-0.5 rounded-full border border-gray-100 shadow-2xs">
+                      {idx % 3 === 0 ? "Chef's Pick" : "Tersedia"}
+                    </span>
                   </div>
 
-                  <div className="min-w-0 grow pr-1">
-                    <h3 className="font-bold text-xs sm:text-sm text-stone-900 tracking-tight leading-tight">
-                      {menu.name}
-                    </h3>
-                    <p className="text-[11px] text-stone-500 line-clamp-2 mt-1 leading-relaxed">
-                      {menu.description}
-                    </p>
-                    <p className="text-xs sm:text-sm font-black text-amber-800 font-mono mt-1.5">
-                      {formatRupiah(menu.price)}
-                    </p>
-                  </div>
+                  {/* Title & Description */}
+                  <h3 className="font-bold text-sm text-gray-900 leading-snug line-clamp-1">
+                    {item.name}
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-1 line-clamp-2 leading-relaxed">
+                    {item.description || 'Pilihan lezat dengan bahan segar dan rempah istimewa.'}
+                  </p>
                 </div>
 
-                {/* Stepper / Add Button */}
-                <div className="shrink-0 pl-1">
+                {/* Price & Action */}
+                <div className="pt-3 mt-3 border-t border-gray-50 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-gray-400 font-medium block">Harga</span>
+                    <span className="text-sm sm:text-base font-extrabold text-gray-900 font-mono">
+                      {formatRupiah(item.price)}
+                    </span>
+                  </div>
+
                   {inCart ? (
-                    <div className="flex items-center space-x-2 bg-stone-900 text-white rounded-full p-1 shadow-warm-sm">
+                    <div className="flex items-center space-x-2 bg-gray-100 rounded-full p-1 border border-gray-200">
                       <button
-                        onClick={() => updateItemQty(menu.id, -1)}
-                        className="w-6 h-6 rounded-full bg-stone-800 hover:bg-stone-700 text-white flex items-center justify-center font-bold text-xs transition active:scale-90"
+                        onClick={() => updateItemQty(item.id, -1)}
+                        className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-700 shadow-2xs active:scale-90 transition"
                       >
-                        <Minus className="w-3 h-3" />
+                        -
                       </button>
-                      <span className="w-4 text-center text-xs font-black text-amber-300 font-mono">
+                      <span className="w-5 text-center font-bold text-xs font-mono text-gray-900">
                         {inCart.qty}
                       </span>
                       <button
-                        onClick={() => updateItemQty(menu.id, 1)}
-                        className="w-6 h-6 rounded-full bg-stone-800 hover:bg-stone-700 text-white flex items-center justify-center font-bold text-xs transition active:scale-90"
+                        onClick={() => updateItemQty(item.id, 1)}
+                        className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold shadow-2xs active:scale-90 transition"
                       >
-                        <Plus className="w-3 h-3" />
+                        +
                       </button>
                     </div>
                   ) : (
                     <button
-                      onClick={() => addToCart(menu)}
-                      className="bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold px-3.5 py-2 rounded-full flex items-center space-x-1.5 transition shadow-warm-sm active:scale-95"
+                      onClick={() => addToCart(item)}
+                      className="bg-black hover:bg-gray-800 text-white font-bold px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1 transition active:scale-95 shadow-2xs"
                     >
-                      <Plus className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Pesan</span>
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Tambah</span>
                     </button>
                   )}
                 </div>
@@ -450,213 +438,192 @@ function CustomerOrderContent() {
           })}
         </div>
 
-        {/* Footer Brand Info */}
-        <div className="mt-8 text-center text-[11px] text-stone-500 border-t border-stone-200/80 pt-6 pb-2 space-y-1">
-          <p className="font-bold text-stone-800">{setting?.name || 'Rasa Nusantara Resto & Cafe'}</p>
-          <p className="text-stone-500 text-[10px]">{setting?.address || 'Jl. Kuliner Lezat No. 88, Jakarta'}</p>
-          <p className="text-[10px] text-stone-400 mt-1">Pesanan Anda dimasak langsung dan disajikan ke Meja {tableNumber}</p>
-        </div>
+        {filteredMenus.length === 0 && (
+          <div className="text-center py-24 bg-white rounded-3xl border border-gray-100 text-gray-400">
+            <UtensilsCrossed className="w-10 h-10 mx-auto mb-2 opacity-30 text-orange-500" />
+            <p className="font-bold text-sm text-gray-700">Menu Tidak Ditemukan</p>
+            <p className="text-xs text-gray-400 mt-0.5">Coba gunakan kata kunci lain atau pilih kategori Semua Menu.</p>
+          </div>
+        )}
 
       </main>
 
-      {/* Floating Active Order Status Bar */}
-      {activeOrder && activeOrder.order_status !== 'completed' && activeOrder.order_status !== 'cancelled' && (
-        <div className="fixed bottom-20 left-4 right-4 z-40 max-w-md mx-auto animate-in slide-in-from-bottom-3">
-          <Link
-            href={`/status?id=${activeOrder.id}&meja=${activeOrder.table_number || tableNumber}`}
-            className="bg-stone-950/95 backdrop-blur-md text-white p-3.5 rounded-2xl shadow-warm-xl flex items-center justify-between border border-stone-800 hover:bg-stone-900 transition group"
-          >
-            <div className="flex items-center space-x-3 overflow-hidden">
-              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
-                <Clock className="w-4 h-4 animate-spin-slow" />
-              </div>
-              <div className="overflow-hidden text-xs">
-                <p className="font-bold text-white truncate flex items-center gap-1.5">
-                  <span>Meja {activeOrder.table_number || tableNumber}</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span className="text-[11px] text-emerald-400 font-bold">
-                    {activeOrder.order_status === 'pending' ? 'Pesanan Diterima' : activeOrder.order_status === 'processing' ? 'Sedang Dimasak' : 'Siap Saji'}
-                  </span>
-                </p>
-                <p className="text-[10px] text-stone-400 truncate">
-                  #{activeOrder.order_number} • Sentuh untuk lihat status & bayar QRIS
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-1 text-amber-400 text-xs font-bold shrink-0 pl-2">
-              <span>Buka</span>
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition" />
-            </div>
-          </Link>
-        </div>
-      )}
-
-      {/* Floating Bottom Cart Bar */}
-      {totalCartQty > 0 && (
-        <div className="fixed bottom-4 inset-x-0 max-w-md mx-auto px-4 z-40 animate-in slide-in-from-bottom-2">
-          <button
+      {/* Floating Bottom Cart Bar (Appears when items are in cart) */}
+      {cart.length > 0 && (
+        <div className="fixed bottom-4 inset-x-4 sm:inset-x-auto sm:right-6 sm:w-96 z-40 animate-in slide-in-from-bottom duration-200">
+          <div 
             onClick={() => setIsCartOpen(true)}
-            className="w-full bg-stone-950 text-white p-3.5 rounded-2xl shadow-warm-xl flex items-center justify-between hover:bg-stone-900 transition active:scale-98 border border-stone-800"
+            className="bg-black text-white p-4 rounded-3xl shadow-xl flex items-center justify-between cursor-pointer hover:bg-gray-900 transition active:scale-98 border border-white/10"
           >
             <div className="flex items-center space-x-3">
-              <span className="w-7 h-7 rounded-xl bg-amber-500 text-stone-950 text-xs font-black flex items-center justify-center font-mono">
+              <div className="w-10 h-10 rounded-2xl bg-orange-500 flex items-center justify-center text-white font-black text-sm shrink-0">
                 {totalCartQty}
-              </span>
-              <span className="text-xs font-bold tracking-tight">Lihat Keranjang Pesanan</span>
+              </div>
+              <div>
+                <p className="text-[11px] text-gray-300 font-medium">{totalCartQty} Menu Terpilih</p>
+                <p className="font-black text-sm sm:text-base font-mono">{formatRupiah(totalCartPrice)}</p>
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-black text-amber-300 font-mono">{formatRupiah(totalCartPrice)}</span>
-              <ArrowRight className="w-4 h-4 text-amber-400" />
-            </div>
-          </button>
+
+            <button className="bg-white text-black font-extrabold px-4 py-2 rounded-2xl text-xs flex items-center gap-1">
+              <span>Lihat Pesanan</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Cart Drawer Bottom Sheet */}
+      {/* Slide-over / Modal Cart Drawer */}
       {isCartOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end justify-center animate-in fade-in">
-          <div className="w-full max-w-md bg-white rounded-t-3xl max-h-[88vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom-4 border-t border-stone-200">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-200">
             
-            {/* Sheet Handle & Header */}
-            <div className="pt-2 pb-1 flex justify-center">
-              <div className="w-10 h-1 rounded-full bg-stone-300"></div>
-            </div>
-
-            <div className="px-5 py-3 border-b border-stone-100 flex items-center justify-between">
+            {/* Drawer Header */}
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
               <div>
-                <h3 className="font-black text-stone-950 text-sm">Pesanan Meja {tableNumber}</h3>
-                <p className="text-[11px] text-stone-500">{totalCartQty} hidangan dipilih</p>
+                <h3 className="font-extrabold text-base text-gray-900">Rincian Pesanan Meja {tableNumber}</h3>
+                <p className="text-xs text-gray-400">Periksa kembali item sebelum dikirim ke dapur</p>
               </div>
-              <button
+              <button 
                 onClick={() => setIsCartOpen(false)}
-                className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-500 hover:text-stone-900 transition"
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Cart Items List */}
-            <div className="p-5 overflow-y-auto grow space-y-4">
+            <div className="p-5 overflow-y-auto grow space-y-3.5">
               {cart.map(item => (
-                <div key={item.menu_id} className="border-b border-stone-100 pb-3 last:border-b-0 space-y-2">
+                <div key={item.menu_id} className="p-3 bg-[#F8F9FA] rounded-2xl border border-gray-100 space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-xs font-bold text-stone-900">{item.menu_name}</h4>
-                      <p className="text-[11px] text-amber-800 font-mono font-semibold">{formatRupiah(item.price)}</p>
+                      <h4 className="font-bold text-xs sm:text-sm text-gray-900">{item.menu_name}</h4>
+                      <p className="text-xs font-bold text-emerald-600 font-mono mt-0.5">
+                        {formatRupiah(item.price)}
+                      </p>
                     </div>
-                    <div className="flex items-center space-x-2 bg-stone-100 rounded-full p-1 border border-stone-200">
-                      <button onClick={() => updateItemQty(item.menu_id, -1)} className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs font-bold text-stone-700 shadow-2xs">
-                        <Minus className="w-3 h-3" />
+
+                    <div className="flex items-center space-x-2 bg-white rounded-full p-1 border border-gray-200">
+                      <button
+                        onClick={() => updateItemQty(item.menu_id, -1)}
+                        className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-700"
+                      >
+                        -
                       </button>
-                      <span className="w-4 text-center text-xs font-black font-mono text-stone-900">{item.qty}</span>
-                      <button onClick={() => updateItemQty(item.menu_id, 1)} className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs font-bold text-stone-700 shadow-2xs">
-                        <Plus className="w-3 h-3" />
+                      <span className="w-5 text-center font-bold text-xs font-mono text-gray-900">
+                        {item.qty}
+                      </span>
+                      <button
+                        onClick={() => updateItemQty(item.menu_id, 1)}
+                        className="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold"
+                      >
+                        +
                       </button>
                     </div>
                   </div>
+
+                  {/* Item note input */}
                   <input
                     type="text"
-                    placeholder="Catatan porsi (misal: pedas sedang, es dipisah...)"
+                    placeholder="Catatan khusus (misal: pedas, tanpa es)..."
                     value={item.item_notes || ''}
-                    onChange={e => updateItemNote(item.menu_id, e.target.value)}
-                    className="w-full bg-stone-50 border border-stone-200/90 rounded-xl px-3 py-1.5 text-xs text-stone-800 placeholder:text-stone-400 focus:outline-hidden focus:border-stone-900"
+                    onChange={(e) => updateItemNote(item.menu_id, e.target.value)}
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-[11px] text-gray-800 placeholder-gray-400 focus:outline-hidden focus:border-black"
                   />
                 </div>
               ))}
 
-              {/* Guest Information */}
-              <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200/80 space-y-2.5 text-xs">
+              {/* Order Info Inputs */}
+              <div className="pt-2 space-y-3 text-xs">
                 <div>
-                  <label className="block text-[11px] font-bold text-stone-700 mb-1">Nama Pemesan</label>
+                  <label className="block font-bold text-gray-700 mb-1">Nama Pemesan</label>
                   <input
                     type="text"
                     value={customerName}
-                    onChange={e => setCustomerName(e.target.value)}
-                    className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold text-stone-900 focus:outline-hidden focus:border-stone-900"
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Nama Anda..."
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-2.5 font-bold text-gray-900 focus:bg-white focus:outline-hidden focus:border-black"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-[11px] font-bold text-stone-700 mb-1">Catatan Tambahan untuk Koki</label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: Sambal dipisah, minta sendok ekstra"
-                    value={orderNotes}
-                    onChange={e => setOrderNotes(e.target.value)}
-                    className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-hidden focus:border-stone-900"
-                  />
+                  <label className="block font-bold text-gray-700 mb-1">Metode Pembayaran</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('QRIS')}
+                      className={`p-3 rounded-2xl border text-left font-bold transition ${
+                        paymentMethod === 'QRIS'
+                          ? 'border-orange-500 bg-orange-50 text-orange-950 ring-1 ring-orange-500'
+                          : 'border-gray-200 bg-white text-gray-700'
+                      }`}
+                    >
+                      <p className="text-xs">QRIS Digital</p>
+                      <p className="text-[10px] text-gray-500 font-normal mt-0.5">BCA, GoPay, OVO, ShopeePay</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('Tunai')}
+                      className={`p-3 rounded-2xl border text-left font-bold transition ${
+                        paymentMethod === 'Tunai'
+                          ? 'border-orange-500 bg-orange-50 text-orange-950 ring-1 ring-orange-500'
+                          : 'border-gray-200 bg-white text-gray-700'
+                      }`}
+                    >
+                      <p className="text-xs">Bayar di Kasir</p>
+                      <p className="text-[10px] text-gray-500 font-normal mt-0.5">Tunai atau Kartu Debit</p>
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Payment Method Selector */}
-              <div>
-                <label className="block text-[11px] font-bold text-stone-700 mb-1.5">Metode Pembayaran</label>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('QRIS')}
-                    className={`py-2.5 px-3 rounded-2xl border text-left transition ${
-                      paymentMethod === 'QRIS'
-                        ? 'border-stone-900 bg-stone-900 text-white font-bold shadow-warm-sm'
-                        : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <QrCode className="w-4 h-4 text-amber-400" />
-                      <span>QRIS Instan</span>
-                    </div>
-                    <span className="text-[10px] opacity-80 block mt-0.5">Scan QR langsung dari HP</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('Tunai')}
-                    className={`py-2.5 px-3 rounded-2xl border text-left transition ${
-                      paymentMethod === 'Tunai'
-                        ? 'border-stone-900 bg-stone-900 text-white font-bold shadow-warm-sm'
-                        : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300'
-                    }`}
-                  >
-                    <span>Bayar di Kasir</span>
-                    <span className="text-[10px] opacity-80 block mt-0.5">Pelunasan di kasir resto</span>
-                  </button>
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Catatan Tambahan untuk Dapur (Opsional)</label>
+                  <textarea
+                    rows={2}
+                    value={orderNotes}
+                    onChange={(e) => setOrderNotes(e.target.value)}
+                    placeholder="Contoh: Tolong disajikan bersamaan..."
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-2 text-xs text-gray-900 focus:bg-white focus:outline-hidden focus:border-black resize-none"
+                  />
                 </div>
               </div>
 
               {/* Price Breakdown */}
-              <div className="pt-3 border-t border-stone-200 space-y-1.5 text-xs">
-                <div className="flex justify-between items-baseline text-stone-600">
-                  <span>Subtotal Menu</span>
-                  <span className="font-mono font-semibold text-stone-900">{formatRupiah(subtotalCartPrice)}</span>
+              <div className="pt-3 border-t border-gray-100 space-y-1.5 text-xs text-gray-500">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span className="font-bold text-gray-800 font-mono">{formatRupiah(subtotalCartPrice)}</span>
                 </div>
-                {taxPercent > 0 && (
-                  <div className="flex justify-between items-baseline text-stone-600">
-                    <span>Pajak Restoran (PB1 {taxPercent}%)</span>
-                    <span className="font-mono font-semibold text-stone-900">{formatRupiah(taxAmount)}</span>
-                  </div>
-                )}
-                {serviceAmount > 0 && (
-                  <div className="flex justify-between items-baseline text-stone-600">
-                    <span>Service Charge ({servicePercent}%)</span>
-                    <span className="font-mono font-semibold text-stone-900">{formatRupiah(serviceAmount)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-baseline text-sm font-black text-stone-950 pt-2 border-t border-stone-200">
-                  <span>Total Tagihan</span>
-                  <span className="font-mono text-base text-amber-900">{formatRupiah(totalCartPrice)}</span>
+                <div className="flex justify-between">
+                  <span>Pajak Resto ({taxPercent}%)</span>
+                  <span className="font-bold text-gray-800 font-mono">{formatRupiah(taxAmount)}</span>
+                </div>
+                <div className="flex justify-between items-baseline pt-2 border-t border-gray-100 text-sm">
+                  <span className="font-extrabold text-gray-900">Total Pembayaran</span>
+                  <span className="font-black text-lg text-emerald-600 font-mono">
+                    {formatRupiah(totalCartPrice)}
+                  </span>
                 </div>
               </div>
-
             </div>
 
-            {/* Bottom Submit Button */}
-            <div className="p-4 border-t border-stone-100 bg-stone-50">
+            {/* Drawer Footer CTA */}
+            <div className="p-5 border-t border-gray-100 bg-gray-50">
               <button
                 disabled={isSubmitting || cart.length === 0}
                 onClick={handleSubmitOrder}
-                className="w-full bg-stone-950 hover:bg-stone-900 text-white font-black py-3.5 rounded-2xl text-xs uppercase tracking-wider transition shadow-warm-lg disabled:opacity-50 flex items-center justify-center space-x-2 active:scale-98"
+                className="w-full bg-black hover:bg-gray-900 disabled:opacity-50 text-white font-extrabold py-4 rounded-2xl text-xs uppercase tracking-wider transition shadow-lg active:scale-98 flex items-center justify-center gap-2"
               >
-                <span>{isSubmitting ? 'Mengirim ke Dapur...' : 'Kirim Pesanan ke Dapur'}</span>
-                <ArrowRight className="w-4 h-4 text-amber-400" />
+                {isSubmitting ? (
+                  <span>Mengirim Pesanan...</span>
+                ) : (
+                  <>
+                    <span>Kirim Pesanan ke Dapur & Kasir</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </div>
 
@@ -664,34 +631,36 @@ function CustomerOrderContent() {
         </div>
       )}
 
-      {/* Select Table Modal */}
+      {/* Change Table Modal */}
       {isTableModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-xs w-full p-5 shadow-2xl border border-stone-200 space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b border-stone-100">
-              <h3 className="font-black text-sm text-stone-950">Pilih Nomor Meja Anda</h3>
-              <button onClick={() => setIsTableModalOpen(false)} className="text-stone-400 hover:text-stone-900">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+              <h3 className="font-extrabold text-sm text-gray-900">Pilih Nomor Meja Anda</h3>
+              <button onClick={() => setIsTableModalOpen(false)} className="text-gray-400 hover:text-gray-900">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-stone-500">
-              Pilih nomor meja tempat Anda duduk saat ini:
+            
+            <p className="text-xs text-gray-500">
+              Nomor meja biasanya tertera di standing akrilik barcode di atas meja Anda.
             </p>
-            <div className="grid grid-cols-5 gap-2">
-              {tables.map(tbl => (
+
+            <div className="grid grid-cols-4 gap-2">
+              {tables.map(t => (
                 <button
-                  key={tbl.table_number}
+                  key={t.table_number}
                   onClick={() => {
-                    setTableNumber(tbl.table_number);
+                    setTableNumber(t.table_number);
                     setIsTableModalOpen(false);
                   }}
-                  className={`py-3 rounded-2xl text-xs font-bold border transition ${
-                    tableNumber === tbl.table_number
-                      ? 'bg-stone-900 text-amber-300 border-stone-900 shadow-warm-sm'
-                      : 'bg-white text-stone-700 border-stone-200 hover:border-stone-400'
+                  className={`py-3 rounded-2xl font-black text-xs transition ${
+                    tableNumber === t.table_number
+                      ? 'bg-black text-white shadow-xs'
+                      : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200'
                   }`}
                 >
-                  M-{tbl.table_number}
+                  {t.table_number}
                 </button>
               ))}
             </div>
@@ -699,52 +668,43 @@ function CustomerOrderContent() {
         </div>
       )}
 
-      {/* Waiter Call Modal */}
+      {/* Call Waiter Modal */}
       {isCallWaiterOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-stone-200 space-y-3.5">
-            <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-gray-100">
               <div className="flex items-center space-x-2">
-                <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
-                  <Bell className="w-4 h-4" />
-                </div>
-                <h3 className="font-black text-xs uppercase tracking-tight text-stone-950">
-                  Panggil Pelayan • Meja {tableNumber}
-                </h3>
+                <Bell className="w-4 h-4 text-orange-500" />
+                <h3 className="font-extrabold text-sm text-gray-900">Panggil Pelayan ke Meja {tableNumber}</h3>
               </div>
-              <button onClick={() => setIsCallWaiterOpen(false)} className="text-stone-400 hover:text-stone-900">
+              <button onClick={() => setIsCallWaiterOpen(false)} className="text-gray-400 hover:text-gray-900">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-stone-500 leading-relaxed">
-              Pilih bantuan yang Anda butuhkan, pelayan kami akan segera menghampiri Meja {tableNumber}:
-            </p>
-
-            <div className="space-y-1.5 text-xs">
-              {[
-                { id: 'Bantuan Pelayan ke Meja', label: '🛎️ Butuh Bantuan Pelayan ke Meja' },
-                { id: 'Minta Bill / Pembayaran', label: '🧾 Minta Bill / Pelunasan ke Kasir' },
-                { id: 'Alat Makan & Tisu', label: '🍴 Tambahan Sendok, Garpu & Tisu' },
-                { id: 'Refill Air / Minum', label: '🥛 Minta Air Minum / Refill' }
-              ].map(opt => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  disabled={isSendingCall}
-                  onClick={() => handleSendWaiterCall(opt.id)}
-                  className="w-full p-3 rounded-2xl border border-stone-200 bg-stone-50 hover:bg-stone-100 hover:border-stone-300 text-left font-bold text-stone-800 transition flex items-center justify-between disabled:opacity-50"
-                >
-                  <span>{opt.label}</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
-                </button>
-              ))}
-            </div>
-
-            {callSuccessNotice && (
-              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-center text-xs text-emerald-800 font-bold flex items-center justify-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>{callSuccessNotice}</span>
+            {callSuccessNotice ? (
+              <div className="py-6 text-center text-xs font-bold text-emerald-600 bg-emerald-50 rounded-2xl border border-emerald-200 animate-in zoom-in-95">
+                ✓ {callSuccessNotice}
+              </div>
+            ) : (
+              <div className="space-y-2 text-xs">
+                <p className="text-gray-500 text-[11px]">Pilih bantuan yang Anda butuhkan:</p>
+                {[
+                  'Minta Sendok / Garpu / Tisu',
+                  'Minta Tambah Air Minum',
+                  'Minta Tolong Bersihkan Meja',
+                  'Minta Bon Tagihan (Billing)',
+                  'Bantuan Lainnya'
+                ].map(callText => (
+                  <button
+                    key={callText}
+                    disabled={isSendingCall}
+                    onClick={() => handleSendWaiterCall(callText)}
+                    className="w-full text-left p-3 rounded-2xl bg-gray-50 hover:bg-orange-50 hover:text-orange-950 border border-gray-100 font-bold transition active:scale-98"
+                  >
+                    {callText}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -757,7 +717,7 @@ function CustomerOrderContent() {
 
 export default function CustomerOrderPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-xs font-bold text-stone-400">Memuat menu...</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-xs text-gray-400">Memuat Menu...</div>}>
       <CustomerOrderContent />
     </Suspense>
   );
