@@ -540,8 +540,8 @@ export default function CashierPage() {
           
           {/* Logo & Brand */}
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center text-white shadow-xs">
-              <span className="font-black text-sm">✦</span>
+            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-xs shadow-xs">
+              KR
             </div>
             <div>
               <h1 className="font-extrabold text-base tracking-tight text-gray-900">
@@ -550,13 +550,12 @@ export default function CashierPage() {
             </div>
 
             {/* Shift Badge */}
-            <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700 border border-gray-200">
               {activeCashier?.name || 'Kasir 1'}
             </span>
           </div>
 
-          {/* Navigation Mode Tabs: [Menu POS] vs [📱 Pesanan Scan QR Masuk (Live)] vs [Denah Meja] */}
+          {/* Navigation Mode Tabs: [Menu POS] vs [Pesanan Scan QR Masuk] vs [Denah Meja] */}
           <div className="hidden sm:flex items-center bg-gray-100 p-1 rounded-2xl border border-gray-200 text-xs font-bold">
             <button
               onClick={() => setActiveMainTab('pos')}
@@ -582,7 +581,7 @@ export default function CashierPage() {
               <Smartphone className="w-3.5 h-3.5" />
               <span>Pesanan Scan QR</span>
               {activeQrOrders.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-red-500 text-white font-black animate-pulse">
+                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-red-500 text-white font-black">
                   {activeQrOrders.length}
                 </span>
               )}
@@ -641,7 +640,6 @@ export default function CashierPage() {
         <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-5 py-2.5 text-xs font-bold flex items-center justify-between shadow-xs">
           <div className="max-w-[1550px] mx-auto w-full flex items-center justify-between">
             <div className="flex items-center space-x-2.5">
-              <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
               <Bell className="w-4 h-4" />
               <span>
                 Panggilan Meja {waiterCalls[0].table_number}: "{waiterCalls[0].call_type}" ({waiterCalls[0].customer_name || 'Tamu'})
@@ -711,7 +709,7 @@ export default function CashierPage() {
                         className="bg-white rounded-3xl p-3 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition group h-[240px]"
                       >
                         <div>
-                          {/* Photo with Available overlay - Fixed Uniform Size */}
+                          {/* Photo with Fixed Uniform Size */}
                           <div className="w-full h-32 relative rounded-2xl overflow-hidden bg-gray-100 mb-2.5 shrink-0">
                             <img 
                               src={item.image} 
@@ -721,10 +719,6 @@ export default function CashierPage() {
                               }}
                               className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
                             />
-                            <span className="absolute top-2 left-2 bg-white/95 backdrop-blur-xs text-[10px] font-bold text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-100 shadow-2xs flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                              Tersedia
-                            </span>
                           </div>
 
                           <h3 className="font-bold text-xs text-gray-900 truncate leading-snug">
@@ -814,7 +808,7 @@ export default function CashierPage() {
                         className="bg-white rounded-3xl p-3 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition group h-[240px]"
                       >
                         <div>
-                          {/* Image with Available overlay - Fixed Uniform Size */}
+                          {/* Image with Fixed Uniform Size */}
                           <div className="w-full h-32 relative rounded-2xl overflow-hidden bg-gray-100 mb-2.5 shrink-0">
                             <img 
                               src={item.image} 
@@ -824,10 +818,6 @@ export default function CashierPage() {
                               }}
                               className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
                             />
-                            <span className="absolute top-2 left-2 bg-white/95 backdrop-blur-xs text-[10px] font-bold text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-100 shadow-2xs flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                              Tersedia
-                            </span>
                           </div>
 
                           <h3 className="font-bold text-xs text-gray-900 truncate leading-snug">
@@ -1131,7 +1121,7 @@ export default function CashierPage() {
                             isPaid 
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                               : isWaitingConfirmation
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200 animate-pulse'
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
                               : 'bg-amber-50 text-amber-800 border border-amber-200'
                           }`}>
                             {isPaid ? 'Lunas' : isWaitingConfirmation ? 'Verifikasi QRIS' : 'Belum Bayar'}
@@ -1278,7 +1268,7 @@ export default function CashierPage() {
                     key={table.table_number}
                     className={`rounded-3xl border p-4 flex flex-col justify-between transition min-h-[180px] shadow-xs ${
                       hasCall 
-                        ? 'bg-orange-50 border-orange-400 ring-2 ring-orange-400/40 animate-pulse'
+                        ? 'bg-orange-50 border-orange-400 ring-2 ring-orange-400/40'
                         : isDirty
                         ? 'bg-orange-50/60 border-orange-300'
                         : isOccupied
@@ -1324,15 +1314,12 @@ export default function CashierPage() {
                         </div>
                       ) : isDirty ? (
                         <div className="py-4 text-center text-xs text-orange-800 space-y-1">
-                          <p className="font-bold flex items-center justify-center gap-1">
-                            <Sparkles className="w-3.5 h-3.5" />
-                            <span>Piring Kotor</span>
-                          </p>
+                          <p className="font-bold">Perlu Dibersihkan</p>
                           <p className="text-[10px] text-gray-500">Tamu telah selesai.</p>
                         </div>
                       ) : (
                         <div className="py-6 text-center text-xs text-gray-400">
-                          Meja bersih & siap pakai
+                          Meja siap pakai
                         </div>
                       )}
                     </div>
@@ -1348,9 +1335,8 @@ export default function CashierPage() {
                       ) : isDirty ? (
                         <button
                           onClick={() => markTableClean(table.table_number)}
-                          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 rounded-xl text-xs flex items-center justify-center gap-1 transition"
+                          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 rounded-xl text-xs flex items-center justify-center transition"
                         >
-                          <Sparkles className="w-3.5 h-3.5" />
                           <span>Tandai Bersih</span>
                         </button>
                       ) : (

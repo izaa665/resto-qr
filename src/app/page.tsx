@@ -309,18 +309,15 @@ function CustomerOrderContent() {
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-8 pt-5 space-y-6">
 
-        {/* Ambient Hero Banner */}
-        <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-5 sm:p-7 rounded-3xl shadow-sm relative overflow-hidden">
-          <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-48 h-48 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
+        {/* Header Banner */}
+        <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-5 sm:p-6 rounded-3xl shadow-xs">
+          <div className="space-y-1.5 max-w-2xl">
+            <span className="text-white/80 text-[11px] font-bold uppercase tracking-wider block">
+              Pemesanan Meja {tableNumber}
+            </span>
 
-          <div className="relative z-10 space-y-2 max-w-2xl">
-            <div className="flex items-center space-x-2 text-white/90 text-[11px] font-bold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Pemesanan Langsung Meja {tableNumber}</span>
-            </div>
-
-            <h2 className="text-xl sm:text-3xl font-black tracking-tight leading-tight">
-              Selamat Datang! Pilih Hidangan Favorit Anda.
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
+              Pilih Menu Makanan & Minuman
             </h2>
 
             <p className="text-xs sm:text-sm text-orange-100 font-medium">
@@ -335,7 +332,7 @@ function CustomerOrderContent() {
                     setWifiCopied(true);
                     setTimeout(() => setWifiCopied(false), 2000);
                   }}
-                  className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-xs hover:bg-white/30 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold transition"
+                  className="inline-flex items-center space-x-2 bg-white/20 hover:bg-white/30 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold transition"
                 >
                   <Wifi className="w-3.5 h-3.5" />
                   <span>Wi-Fi: <strong className="font-mono">{setting.wifi_password}</strong></span>
@@ -410,10 +407,6 @@ function CustomerOrderContent() {
                       }}
                       className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
                     />
-                    <span className="absolute top-2.5 left-2.5 bg-white/95 backdrop-blur-xs text-[10px] font-bold text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-100 shadow-2xs flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      Tersedia
-                    </span>
                   </div>
 
                   {/* Title & Description */}

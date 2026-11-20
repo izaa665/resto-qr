@@ -275,10 +275,9 @@ function StatusContent() {
             <ArrowLeft className="w-4 h-4 text-gray-600" />
             <span>Kembali ke Menu</span>
           </Link>
-          <div className="flex items-center space-x-2 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-full text-[11px] font-bold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Realtime Kitchen Sync</span>
-          </div>
+          <span className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full border border-gray-200">
+            Meja {order.table_number || queryTable || '-'}
+          </span>
         </div>
       </header>
 
@@ -338,8 +337,7 @@ function StatusContent() {
                   <span>Lunas ({order.payment_method || 'Kasir'})</span>
                 </span>
               ) : isWaitingVerification ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 animate-pulse">
-                  <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
                   <span>Verifikasi Kasir</span>
                 </span>
               ) : (
@@ -351,7 +349,7 @@ function StatusContent() {
             </div>
           </div>
 
-          {/* Animated Cooking / Preparation Banner */}
+          {/* Cooking / Preparation Banner */}
           <div className={`p-6 rounded-3xl text-center space-y-1.5 transition ${
             order.order_status === 'pending'
               ? 'bg-orange-50 border border-orange-200 text-orange-950'
@@ -361,10 +359,8 @@ function StatusContent() {
               ? 'bg-emerald-50 border border-emerald-200 text-emerald-950'
               : 'bg-gray-100 text-gray-900 border border-gray-200'
           }`}>
-            <div className="flex items-center justify-center space-x-1.5 text-[11px] uppercase tracking-wider font-extrabold opacity-75">
-              {order.order_status === 'processing' && <ChefHat className="w-4 h-4 text-blue-600 animate-bounce" />}
-              {order.order_status === 'ready' && <Sparkles className="w-4 h-4 text-emerald-600" />}
-              <span>Status Pesanan Saat Ini</span>
+            <div className="flex items-center justify-center text-[11px] uppercase tracking-wider font-extrabold opacity-75">
+              <span>Status Pesanan</span>
             </div>
 
             <h3 className="text-lg sm:text-2xl font-black tracking-tight">
@@ -580,7 +576,7 @@ function StatusContent() {
 
             <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between text-xs font-bold">
               <span className="text-gray-500">Waktu Pembayaran:</span>
-              <span className={`font-mono text-sm ${qrisTimeLeft < 60 ? 'text-rose-600 font-black animate-pulse' : 'text-gray-900'}`}>
+              <span className={`font-mono text-sm ${qrisTimeLeft < 60 ? 'text-rose-600 font-black' : 'text-gray-900'}`}>
                 {formatTimer(qrisTimeLeft)}
               </span>
             </div>

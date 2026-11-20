@@ -139,10 +139,6 @@ export default function KitchenDashboardPage() {
                 <h1 className="font-extrabold text-sm sm:text-base tracking-tight text-gray-900 uppercase">
                   Layar Antrean Dapur (KDS)
                 </h1>
-                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Realtime Stream
-                </span>
               </div>
               <p className="text-[11px] text-gray-400 font-medium">Stasiun Pengolahan Makanan & Minuman</p>
             </div>
@@ -189,7 +185,7 @@ export default function KitchenDashboardPage() {
 
         {/* Live Waiter Calls Alert Bar */}
         {waiterCalls.length > 0 && (
-          <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-3.5 rounded-2xl font-bold flex items-center justify-between shadow-xs animate-pulse">
+          <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-3.5 rounded-2xl font-bold flex items-center justify-between shadow-xs">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
                 <Bell className="w-4 h-4 text-white" />
@@ -315,7 +311,7 @@ export default function KitchenDashboardPage() {
 
             // Timer urgency color
             const timerBadge = elapsedMinutes > 15 ? (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-50 text-rose-600 border border-rose-200 flex items-center gap-1 animate-pulse">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-50 text-rose-600 border border-rose-200 flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
                 {elapsedMinutes}m (Terlambat)
               </span>

@@ -624,10 +624,7 @@ export default function AdminPage() {
 
         {/* Quick Operational Shortcuts */}
         <div className="p-3.5 mx-3 mb-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-2.5">
-          <div className="flex items-center space-x-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-[11px] font-bold text-gray-700">Akses Cepat Sistem</span>
-          </div>
+          <span className="text-[11px] font-bold text-gray-700 block">Akses Cepat</span>
           <div className="space-y-1.5">
             <Link
               href="/kasir"
@@ -728,8 +725,8 @@ export default function AdminPage() {
               {/* Greeting & Action Header Row */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-                    {greeting}, {adminDisplayName}! <span className="text-xl">🧑‍🍳</span>
+                  <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+                    {greeting}, {adminDisplayName}
                   </h1>
                   <p className="text-xs text-gray-500 mt-0.5">
                     Ringkasan performa dan operasional restoran Kans Resto hari ini.
@@ -1318,47 +1315,42 @@ export default function AdminPage() {
                   {/* 4 Bottom Status Pills */}
                   <div className="grid grid-cols-4 gap-2 pt-2 border-t border-gray-100 text-center">
                     <div>
-                      <p className="text-[10px] font-bold text-emerald-600 flex items-center justify-center gap-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      <p className="text-[11px] font-bold text-emerald-600">
                         {completedPct}%
                       </p>
                       <p className="text-sm font-black text-gray-900 mt-0.5">{completedOrders}</p>
-                      <p className="text-[9px] text-gray-400 font-medium">Selesai</p>
+                      <p className="text-[10px] text-gray-400 font-medium">Selesai</p>
                     </div>
 
                     <div>
-                      <p className="text-[10px] font-bold text-amber-500 flex items-center justify-center gap-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                      <p className="text-[11px] font-bold text-amber-500">
                         {preparingPct}%
                       </p>
                       <p className="text-sm font-black text-gray-900 mt-0.5">{preparingOrders}</p>
-                      <p className="text-[9px] text-gray-400 font-medium">Dimasak</p>
+                      <p className="text-[10px] text-gray-400 font-medium">Dimasak</p>
                     </div>
 
                     <div>
-                      <p className="text-[10px] font-bold text-[#FF5B26] flex items-center justify-center gap-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#FF5B26]"></span>
+                      <p className="text-[11px] font-bold text-[#FF5B26]">
                         {pendingPct}%
                       </p>
                       <p className="text-sm font-black text-gray-900 mt-0.5">{pendingOrders}</p>
-                      <p className="text-[9px] text-gray-400 font-medium">Menunggu</p>
+                      <p className="text-[10px] text-gray-400 font-medium">Menunggu</p>
                     </div>
 
                     <div>
-                      <p className="text-[10px] font-bold text-rose-500 flex items-center justify-center gap-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                      <p className="text-[11px] font-bold text-rose-500">
                         {cancelledPct}%
                       </p>
                       <p className="text-sm font-black text-gray-900 mt-0.5">{cancelledOrders}</p>
-                      <p className="text-[9px] text-gray-400 font-medium">Batal</p>
+                      <p className="text-[10px] text-gray-400 font-medium">Batal</p>
                     </div>
                   </div>
                 </div>
 
                 {/* 3. Business Insights (4 cols) */}
                 <div className="xl:col-span-4 bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-4 flex flex-col justify-between">
-                  <div className="flex items-center space-x-2 pb-1">
-                    <span className="text-base">💡</span>
+                  <div className="pb-1">
                     <h3 className="font-bold text-sm text-gray-900">Ringkasan Operasional</h3>
                   </div>
 
@@ -1395,11 +1387,10 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* System Real-Time Status Banner */}
-                  <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center justify-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <p className="text-xs font-bold text-emerald-800">
-                      Sistem Kasir, Dapur & Meja QR Terhubung Real-Time
+                  {/* System Status Banner */}
+                  <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100 text-center">
+                    <p className="text-xs font-semibold text-gray-600">
+                      Sistem Kasir, Dapur & Meja QR Terhubung
                     </p>
                   </div>
                 </div>
