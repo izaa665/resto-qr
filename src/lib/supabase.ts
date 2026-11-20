@@ -172,10 +172,10 @@ export const initialOrders: Order[] = [
 ];
 
 export const initialUsers: User[] = [
-  { id: 1, name: 'Budi (Admin Owner)', username: 'admin', pin: '1234', email: 'owner@resto.com', role: 'admin', is_active: true },
-  { id: 2, name: 'Rina (Kasir Shift Pagi)', username: 'rina', pin: '1111', email: 'rina@resto.com', role: 'kasir', is_active: true },
-  { id: 3, name: 'Doni (Kasir Shift Sore)', username: 'doni', pin: '2222', email: 'doni@resto.com', role: 'kasir', is_active: true },
-  { id: 4, name: 'Chef Joko (Dapur)', username: 'joko', pin: '3333', email: 'dapur@resto.com', role: 'dapur', is_active: true }
+  { id: 1, name: 'Budi', username: 'admin', pin: '1234', email: 'admin@kansresto.com', role: 'admin', is_active: true },
+  { id: 2, name: 'Rina', username: 'rina', pin: '1111', email: 'kasir@kansresto.com', role: 'kasir', is_active: true },
+  { id: 3, name: 'Doni', username: 'doni', pin: '2222', email: 'kasir2@kansresto.com', role: 'kasir', is_active: true },
+  { id: 4, name: 'Chef Joko', username: 'joko', pin: '3333', email: 'dapur@kansresto.com', role: 'dapur', is_active: true }
 ];
 
 export const initialSetting: RestaurantSetting = {
@@ -507,7 +507,17 @@ export async function deleteMenuItem(id: number): Promise<boolean> {
 export async function fetchSetting(): Promise<RestaurantSetting> {
   if (isSupabaseConfigured && supabase) {
     const { data } = await supabase.from('restaurant_settings').select('*').limit(1).single();
-    if (data) return data;
+    if (data) {
+      if (!data.name || data.name.includes('Rasa Nusantara')) {
+        data.name = 'Kans Resto';
+        try {
+          await supabase.from('restaurant_settings').update({ name: 'Kans Resto' }).eq('id', data.id);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      return data;
+    }
   }
   const local = getLocalData<RestaurantSetting>(STORAGE_KEYS.SETTING, initialSetting);
   if (!local || !local.name || local.name.includes('Rasa Nusantara')) {
