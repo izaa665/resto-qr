@@ -260,46 +260,59 @@ function CustomerOrderContent() {
           
           {/* Brand Identity */}
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-orange-500 text-white flex items-center justify-center font-black shadow-xs">
-              <UtensilsCrossed className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-2xl bg-black text-white flex items-center justify-center font-black text-sm tracking-wider shadow-xs">
+              KR
             </div>
             <div>
-              <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-gray-900 truncate">
-                {setting?.name || 'Kans Resto'}
+              <h1 className="text-base font-black tracking-tight text-gray-900 leading-none">
+                Kans Resto
               </h1>
-              <p className="text-[10px] text-gray-400 font-medium hidden sm:block">Menu Digital & Pesan Mandiri</p>
+              <button 
+                onClick={() => setIsTableModalOpen(true)}
+                className="text-xs font-semibold text-gray-500 hover:text-black flex items-center gap-1.5 mt-1 transition"
+              >
+                <span>Meja {tableNumber}</span>
+                <span className="text-[10px] text-orange-700 font-bold bg-orange-50 px-1.5 py-0.2 rounded-md border border-orange-200">Ganti</span>
+              </button>
             </div>
           </div>
 
           {/* Quick Action Badges */}
           <div className="flex items-center space-x-2">
+            {/* Wi-Fi Info Pill */}
+            {setting?.wifi_password && (
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(setting.wifi_password || '');
+                  setWifiCopied(true);
+                  setTimeout(() => setWifiCopied(false), 2000);
+                }}
+                className="hidden md:inline-flex items-center space-x-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 px-3 py-1.5 rounded-full text-xs font-semibold transition"
+              >
+                <Wifi className="w-3.5 h-3.5 text-gray-500" />
+                <span>Wi-Fi: <strong className="font-mono">{setting.wifi_password}</strong></span>
+                <span className="text-[10px] text-gray-400 font-bold">{wifiCopied ? '✓' : '(Salin)'}</span>
+              </button>
+            )}
+
             {/* Active order badge if exists */}
             {activeOrder && (
               <Link
                 href={`/status?id=${activeOrder.id}&meja=${tableNumber}`}
-                className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200 animate-pulse"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 transition"
               >
                 <Clock className="w-3.5 h-3.5 text-orange-600" />
-                <span>Lihat Status Pesanan</span>
+                <span>Status Pesanan</span>
               </Link>
             )}
 
             {/* Waiter Call Button */}
             <button
               onClick={() => setIsCallWaiterOpen(true)}
-              className="flex items-center space-x-1.5 bg-gray-50 hover:bg-orange-50 text-gray-700 hover:text-orange-600 border border-gray-200 px-3 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shadow-2xs"
+              className="flex items-center space-x-1.5 bg-gray-50 hover:bg-orange-50 text-gray-700 hover:text-orange-600 border border-gray-200 px-3.5 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shadow-2xs"
             >
               <Bell className="w-3.5 h-3.5 text-orange-500" />
-              <span>Panggil</span>
-            </button>
-
-            {/* Table Number Pill */}
-            <button
-              onClick={() => setIsTableModalOpen(true)}
-              className="flex items-center space-x-1.5 bg-black hover:bg-gray-800 text-white px-3.5 py-1.5 rounded-full text-xs font-black transition active:scale-95 shadow-xs"
-            >
-              <MapPin className="w-3.5 h-3.5 text-orange-400" />
-              <span>Meja {tableNumber}</span>
+              <span>Panggil Pelayan</span>
             </button>
           </div>
 
@@ -307,41 +320,7 @@ function CustomerOrderContent() {
       </header>
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-8 pt-5 space-y-6">
-
-        {/* Header Banner */}
-        <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-5 sm:p-6 rounded-3xl shadow-xs">
-          <div className="space-y-1.5 max-w-2xl">
-            <span className="text-white/80 text-[11px] font-bold uppercase tracking-wider block">
-              Pemesanan Meja {tableNumber}
-            </span>
-
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
-              Pilih Menu Makanan & Minuman
-            </h2>
-
-            <p className="text-xs sm:text-sm text-orange-100 font-medium">
-              Pesanan akan otomatis dikirim ke dapur dan disajikan langsung ke meja Anda.
-            </p>
-
-            {setting?.wifi_password && (
-              <div className="pt-2">
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(setting.wifi_password || '');
-                    setWifiCopied(true);
-                    setTimeout(() => setWifiCopied(false), 2000);
-                  }}
-                  className="inline-flex items-center space-x-2 bg-white/20 hover:bg-white/30 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold transition"
-                >
-                  <Wifi className="w-3.5 h-3.5" />
-                  <span>Wi-Fi: <strong className="font-mono">{setting.wifi_password}</strong></span>
-                  <span className="text-[10px] text-orange-200 font-bold">{wifiCopied ? '✓ Tersalin' : '(Salin)'}</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-8 pt-5 space-y-5">
 
         {/* Search & Categories Bar */}
         <div className="space-y-3">
@@ -350,7 +329,7 @@ function CustomerOrderContent() {
             <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Cari makanan, minuman segar, atau cemilan favorit..."
+              placeholder="Cari makanan atau minuman favorit..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-white border border-gray-200 rounded-full pl-11 pr-4 py-3 text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-hidden focus:border-black shadow-xs transition"

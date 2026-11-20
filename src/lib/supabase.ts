@@ -180,13 +180,13 @@ export const initialUsers: User[] = [
 
 export const initialSetting: RestaurantSetting = {
   id: 1,
-  name: 'Rasa Nusantara Resto & Cafe',
-  address: 'Jl. Kuliner Lezat No. 88, Jakarta',
+  name: 'Kans Resto',
+  address: 'Kans Resto, Jakarta',
   phone: '0812-3456-7890',
-  wifi_password: 'nusantara88',
+  wifi_password: 'kansresto88',
   tax_percent: 10,
   service_percent: 0,
-  receipt_footer: 'Terima kasih atas kunjungan Anda!'
+  receipt_footer: 'Terima kasih atas kunjungan Anda di Kans Resto!'
 };
 
 // Storage Keys
@@ -509,7 +509,12 @@ export async function fetchSetting(): Promise<RestaurantSetting> {
     const { data } = await supabase.from('restaurant_settings').select('*').limit(1).single();
     if (data) return data;
   }
-  return getLocalData<RestaurantSetting>(STORAGE_KEYS.SETTING, initialSetting);
+  const local = getLocalData<RestaurantSetting>(STORAGE_KEYS.SETTING, initialSetting);
+  if (!local || !local.name || local.name.includes('Rasa Nusantara')) {
+    setLocalData(STORAGE_KEYS.SETTING, initialSetting);
+    return initialSetting;
+  }
+  return local;
 }
 
 export async function updateSetting(updates: Partial<RestaurantSetting>): Promise<boolean> {
