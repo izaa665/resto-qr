@@ -41,7 +41,8 @@ import {
   ArrowUpRight,
   Flame,
   Coffee,
-  Smartphone
+  Smartphone,
+  SlidersHorizontal
 } from 'lucide-react';
 import { 
   Order, 
@@ -93,7 +94,7 @@ export default function CashierPage() {
 
   // Right Order Panel Cart State (Current Order)
   const [cartItems, setCartItems] = useState<OrderItem[]>([]);
-  const [customerName, setCustomerName] = useState<string>('Emir Ablyyu');
+  const [customerName, setCustomerName] = useState<string>('Pelanggan Kasir');
   const [selectedTableNumber, setSelectedTableNumber] = useState<number>(1);
   const [personCount, setPersonCount] = useState<number>(2);
   const [orderType, setOrderType] = useState<'dine_in' | 'takeaway'>('dine_in');
@@ -295,7 +296,7 @@ export default function CashierPage() {
   const clearCart = () => {
     setCartItems([]);
     setLoadedOrderId(null);
-    setCustomerName('Emir Ablyyu');
+    setCustomerName('Pelanggan Kasir');
   };
 
   // Calculations for current order
@@ -360,34 +361,35 @@ export default function CashierPage() {
   const activeQrOrders = orders.filter(o => o.order_status !== 'completed' && o.order_status !== 'cancelled');
   const unpaidQrOrders = activeQrOrders.filter(o => o.payment_status === 'unpaid' || o.payment_status === 'waiting_confirmation');
 
-  // Categories matching Kans Resto UI
-  const categoriesList = ['All', 'Main Course', 'Appetizer', 'Dessert', 'Side Dishes', 'Beverages', 'Kids'];
+  // Categories
+  const categoriesList = ['Semua', 'Makanan Utama', 'Minuman Segar', 'Camilan & Snack', 'Kopi & Penutup'];
 
   // Categorize or filter items
   const filteredMenuItems = menus.filter(m => {
     if (!m.is_available) return false;
     if (searchQuery.trim() && !m.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    if (selectedCategory === 'All') return true;
-    if (selectedCategory === 'Beverages') {
+    if (selectedCategory === 'Semua') return true;
+    if (selectedCategory === 'Minuman Segar') {
       const n = m.name.toLowerCase();
-      return n.includes('es ') || n.includes('jus') || n.includes('teh') || n.includes('kopi') || n.includes('air') || n.includes('float') || n.includes('latte');
+      return n.includes('es ') || n.includes('jus') || n.includes('teh') || n.includes('air') || n.includes('lemon') || n.includes('jeruk');
     }
-    if (selectedCategory === 'Dessert') {
+    if (selectedCategory === 'Kopi & Penutup') {
       const n = m.name.toLowerCase();
-      return n.includes('cake') || n.includes('cupcake') || n.includes('roti') || n.includes('puding') || n.includes('biscuit') || n.includes('krosang');
+      return n.includes('kopi') || n.includes('latte') || n.includes('cake') || n.includes('puding') || n.includes('roti');
     }
-    if (selectedCategory === 'Kids') {
-      return m.name.toLowerCase().includes('kids') || m.name.toLowerCase().includes('cereal') || m.name.toLowerCase().includes('cupcake');
-    }
-    if (selectedCategory === 'Appetizer' || selectedCategory === 'Side Dishes') {
+    if (selectedCategory === 'Camilan & Snack') {
       const n = m.name.toLowerCase();
-      return n.includes('avocado') || n.includes('salad') || n.includes('gyoza') || n.includes('kentang') || n.includes('tahu');
+      return n.includes('kentang') || n.includes('tahu') || n.includes('tempe') || n.includes('pisang') || n.includes('camilan');
+    }
+    if (selectedCategory === 'Makanan Utama') {
+      const n = m.name.toLowerCase();
+      return n.includes('nasi') || n.includes('ayam') || n.includes('mie') || n.includes('soto') || n.includes('bebek') || n.includes('ikan');
     }
     return true;
   });
 
-  // Sample promo discounts items matching Kans Resto
-  const discountItems = menus.slice(0, 4);
+  // Top recommendations from actual menus
+  const recommendedItems = menus.slice(0, 4);
 
   // Cashier Login Screen (Clean Light Kiosk)
   if (isAuthLoaded && !activeCashier) {
@@ -684,25 +686,26 @@ export default function CashierPage() {
                 </div>
               )}
 
-              {/* 1. Special Discount Today */}
+              {/* 1. Menu Rekomendasi Kasir */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-extrabold text-base text-gray-900">
-                    Special Discount Today
-                  </h2>
-                  <div className="text-xs font-semibold text-gray-400">
-                    Ends in <span className="font-bold text-rose-500 font-mono">12:10:09</span>
+                  <div className="flex items-center space-x-2">
+                    <h2 className="font-extrabold text-base text-gray-900">
+                      Menu Rekomendasi Kasir
+                    </h2>
+                    <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      Pilihan Favorit
+                    </span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                  {discountItems.map((item, idx) => {
-                    const originalPrice = Math.round(item.price * 1.15);
+                  {recommendedItems.map((item) => {
                     const inCart = cartItems.find(c => c.menu_id === item.id);
 
                     return (
                       <div 
-                        key={item.id}
+                        key={`rec-${item.id}`}
                         className="bg-white rounded-3xl p-3 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition group h-[240px]"
                       >
                         <div>
@@ -713,21 +716,16 @@ export default function CashierPage() {
                               alt={item.name} 
                               className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
                             />
-                            <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-xs text-[10px] font-bold text-gray-600 px-2 py-0.5 rounded-full border border-gray-100 shadow-2xs">
-                              Available: {12 - idx * 2}
+                            <span className="absolute top-2 left-2 bg-white/95 backdrop-blur-xs text-[10px] font-bold text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-100 shadow-2xs flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              Tersedia
                             </span>
                           </div>
 
                           <h3 className="font-bold text-xs text-gray-900 truncate leading-snug">
                             {item.name}
                           </h3>
-                          <div className="flex items-baseline space-x-1.5 mt-0.5">
-                            <span className="text-[10px] font-bold text-rose-500">15%</span>
-                            <span className="text-[10px] text-gray-400 line-through">
-                              {formatRupiah(originalPrice)}
-                            </span>
-                          </div>
-                          <p className="text-xs font-extrabold text-gray-900 mt-0.5">
+                          <p className="text-xs font-black text-gray-900 mt-1">
                             {formatRupiah(item.price)}
                           </p>
                         </div>
@@ -738,14 +736,14 @@ export default function CashierPage() {
                             <div className="flex items-center justify-between bg-gray-100 rounded-full p-1">
                               <button 
                                 onClick={() => updateCartQty(item.id, -1)}
-                                className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-700 shadow-2xs"
+                                className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-700 shadow-2xs hover:bg-gray-50"
                               >
                                 -
                               </button>
                               <span className="text-xs font-black text-gray-900">{inCart.qty}</span>
                               <button 
                                 onClick={() => updateCartQty(item.id, 1)}
-                                className="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold shadow-2xs"
+                                className="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold shadow-2xs hover:bg-gray-800"
                               >
                                 +
                               </button>
@@ -755,7 +753,7 @@ export default function CashierPage() {
                               onClick={() => addToCart(item)}
                               className="w-full bg-black hover:bg-gray-800 text-white font-bold py-1.5 rounded-full text-[11px] transition active:scale-95 shadow-2xs"
                             >
-                              Order
+                              + Tambah
                             </button>
                           )}
                         </div>
@@ -769,13 +767,13 @@ export default function CashierPage() {
               <div className="space-y-3.5">
                 <div className="flex items-center justify-between">
                   <h2 className="font-extrabold text-base text-gray-900">
-                    Explore Our Best Menu
+                    Katalog Menu Restoran
                   </h2>
                   <button 
-                    onClick={() => setSelectedCategory('All')}
+                    onClick={() => setSelectedCategory('Semua')}
                     className="text-xs font-semibold text-gray-400 hover:text-black transition"
                   >
-                    View All
+                    Semua Kategori
                   </button>
                 </div>
 
@@ -794,14 +792,15 @@ export default function CashierPage() {
                       {cat}
                     </button>
                   ))}
-                  <button className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-gray-600 border border-gray-200 flex items-center gap-1 shrink-0">
-                    <span>⚡ Filter</span>
+                  <button className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-gray-600 border border-gray-200 flex items-center gap-1.5 shrink-0">
+                    <SlidersHorizontal className="w-3 h-3 text-gray-500" />
+                    <span>Filter</span>
                   </button>
                 </div>
 
                 {/* 4-Column Food Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                  {filteredMenuItems.map((item, idx) => {
+                  {filteredMenuItems.map((item) => {
                     const inCart = cartItems.find(c => c.menu_id === item.id);
 
                     return (
@@ -817,16 +816,16 @@ export default function CashierPage() {
                               alt={item.name} 
                               className="w-full h-full object-cover object-center group-hover:scale-105 transition duration-300"
                             />
-                            <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-xs text-[10px] font-bold text-gray-600 px-2 py-0.5 rounded-full border border-gray-100 shadow-2xs">
-                              Available: {21 - (idx % 10)}
+                            <span className="absolute top-2 left-2 bg-white/95 backdrop-blur-xs text-[10px] font-bold text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-100 shadow-2xs flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              Tersedia
                             </span>
                           </div>
 
                           <h3 className="font-bold text-xs text-gray-900 truncate leading-snug">
                             {item.name}
                           </h3>
-                          <p className="text-[10px] text-gray-400 mt-0.5">Price per portion</p>
-                          <p className="text-xs font-extrabold text-gray-900 mt-0.5">
+                          <p className="text-xs font-black text-gray-900 mt-1">
                             {formatRupiah(item.price)}
                           </p>
                         </div>
@@ -837,14 +836,14 @@ export default function CashierPage() {
                             <div className="flex items-center justify-between bg-gray-100 rounded-full p-1">
                               <button 
                                 onClick={() => updateCartQty(item.id, -1)}
-                                className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-700 shadow-2xs"
+                                className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-700 shadow-2xs hover:bg-gray-50"
                               >
                                 -
                               </button>
                               <span className="text-xs font-black text-gray-900">{inCart.qty}</span>
                               <button 
                                 onClick={() => updateCartQty(item.id, 1)}
-                                className="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold shadow-2xs"
+                                className="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold shadow-2xs hover:bg-gray-800"
                               >
                                 +
                               </button>
@@ -852,9 +851,9 @@ export default function CashierPage() {
                           ) : (
                             <button
                               onClick={() => addToCart(item)}
-                              className="w-full bg-white hover:bg-gray-100 text-gray-800 border border-gray-200 font-bold py-1.5 rounded-full text-[11px] transition active:scale-95 shadow-2xs"
+                              className="w-full bg-black hover:bg-gray-800 text-white font-bold py-1.5 rounded-full text-[11px] transition active:scale-95 shadow-2xs"
                             >
-                              Order
+                              + Tambah
                             </button>
                           )}
                         </div>
@@ -872,37 +871,37 @@ export default function CashierPage() {
               {/* Customer Information Box */}
               <div className="space-y-3 pb-3 border-b border-gray-100">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-extrabold text-sm text-gray-900">Customer Information</h3>
+                  <h3 className="font-extrabold text-sm text-gray-900">Informasi Meja & Tamu</h3>
                   <Info className="w-3.5 h-3.5 text-gray-400" />
                 </div>
 
                 <div className="space-y-2 text-xs">
                   <div>
-                    <label className="text-[10px] text-gray-400 block mb-0.5 font-medium">Customer name</label>
+                    <label className="text-[10px] text-gray-400 block mb-0.5 font-medium">Nama Pelanggan</label>
                     <input
                       type="text"
                       value={customerName}
                       onChange={e => setCustomerName(e.target.value)}
-                      placeholder="Masukkan nama pelanggan..."
+                      placeholder="Contoh: Meja 5 / Tamu..."
                       className="w-full bg-[#F5F6F8] border border-gray-200 rounded-xl px-3 py-2 font-bold text-gray-900 focus:bg-white focus:outline-hidden focus:border-black transition"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[10px] text-gray-400 block mb-0.5 font-medium">Tipe Order</label>
+                      <label className="text-[10px] text-gray-400 block mb-0.5 font-medium">Tipe Pesanan</label>
                       <select
                         value={orderType}
                         onChange={e => setOrderType(e.target.value as any)}
                         className="w-full bg-[#F5F6F8] border border-gray-200 rounded-xl px-2.5 py-2 font-bold text-gray-900 text-xs"
                       >
-                        <option value="dine_in">Dine In (Meja)</option>
-                        <option value="takeaway">Takeaway</option>
+                        <option value="dine_in">Dine In (Makan di Tempat)</option>
+                        <option value="takeaway">Takeaway (Bungkus)</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="text-[10px] text-gray-400 block mb-0.5 font-medium">Pilih Meja</label>
+                      <label className="text-[10px] text-gray-400 block mb-0.5 font-medium">Nomor Meja</label>
                       <select
                         disabled={orderType === 'takeaway'}
                         value={selectedTableNumber}
@@ -918,7 +917,7 @@ export default function CashierPage() {
 
                   {orderType === 'dine_in' && (
                     <div className="p-2.5 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between text-xs">
-                      <span className="font-bold text-gray-800">{personCount} Person Table</span>
+                      <span className="font-bold text-gray-800">Kapasitas Tamu ({personCount} Orang)</span>
                       <div className="flex items-center space-x-2">
                         <button 
                           onClick={() => setPersonCount(prev => Math.max(1, prev - 1))}
@@ -942,13 +941,13 @@ export default function CashierPage() {
               {/* Current Order List */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-extrabold text-sm text-gray-900">Current Order</h3>
+                  <h3 className="font-extrabold text-sm text-gray-900">Daftar Pesanan Saat Ini</h3>
                   {cartItems.length > 0 && (
                     <button 
                       onClick={clearCart}
                       className="text-[11px] text-rose-500 font-bold hover:underline"
                     >
-                      Clear All
+                      Kosongkan
                     </button>
                   )}
                 </div>
@@ -1013,7 +1012,7 @@ export default function CashierPage() {
 
               {/* Payment Summary */}
               <div className="space-y-2 pt-3 border-t border-gray-100 text-xs">
-                <h4 className="font-extrabold text-xs text-gray-900">Payment Summary</h4>
+                <h4 className="font-extrabold text-xs text-gray-900">Rincian Pembayaran</h4>
                 
                 <div className="space-y-1.5 text-gray-500">
                   <div className="flex justify-between">
@@ -1022,16 +1021,16 @@ export default function CashierPage() {
                   </div>
                   {discountAmount > 0 && (
                     <div className="flex justify-between text-rose-500">
-                      <span>Discount sales (10%)</span>
+                      <span>Potongan Diskon (10%)</span>
                       <span className="font-bold font-mono">-{formatRupiah(discountAmount)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span>Total tax (10%)</span>
+                    <span>Pajak Resto (PB1 10%)</span>
                     <span className="font-bold font-mono text-gray-800">{formatRupiah(taxAmount)}</span>
                   </div>
                   <div className="flex justify-between items-baseline pt-2 border-t border-gray-100">
-                    <span className="font-extrabold text-sm text-gray-900">Total</span>
+                    <span className="font-extrabold text-sm text-gray-900">Total Tagihan</span>
                     <span className="font-black text-lg text-emerald-600 font-mono">
                       {formatRupiah(cartGrandTotal)}
                     </span>
@@ -1045,7 +1044,7 @@ export default function CashierPage() {
                     onClick={() => handleCheckoutCurrentOrder(true)}
                     className="w-full bg-black hover:bg-gray-900 disabled:opacity-40 text-white font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider transition shadow-md active:scale-98"
                   >
-                    {loadedOrderId ? 'Bayar & Selesaikan Pesanan' : 'Order Now'}
+                    {loadedOrderId ? 'Bayar & Selesaikan Pesanan' : 'Proses & Bayar Sekarang'}
                   </button>
                 </div>
               </div>

@@ -259,13 +259,13 @@ export default function AdminPage() {
     .sort((a, b) => b.qty - a.qty)
     .slice(0, 5);
 
-  // Fallback sample items if no orders yet to look exactly like the design
+  // Fallback sample items if no orders yet to look clean and professional
   const displayDishes = bestSellers.length > 0 ? bestSellers : [
-    { name: 'Paneer Butter Masala', qty: 124, revenue: 64500, image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=120&auto=format&fit=crop&q=80' },
-    { name: 'Chicken Biryani', qty: 98, revenue: 53200, image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=120&auto=format&fit=crop&q=80' },
-    { name: 'Veg Pizza', qty: 76, revenue: 42800, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=120&auto=format&fit=crop&q=80' },
-    { name: 'Masala Dosa', qty: 58, revenue: 31200, image: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?w=120&auto=format&fit=crop&q=80' },
-    { name: 'Chocolate Lava Cake', qty: 38, revenue: 22800, image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=120&auto=format&fit=crop&q=80' }
+    { name: 'Nasi Goreng Spesial', qty: 124, revenue: 3472000, image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=120&auto=format&fit=crop&q=80' },
+    { name: 'Ayam Bakar Madu', qty: 98, revenue: 3136000, image: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=120&auto=format&fit=crop&q=80' },
+    { name: 'Mie Goreng Seafood', qty: 76, revenue: 1976000, image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=120&auto=format&fit=crop&q=80' },
+    { name: 'Soto Ayam Lamongan', qty: 58, revenue: 1392000, image: 'https://images.unsplash.com/photo-1572656631137-7935297eff55?w=120&auto=format&fit=crop&q=80' },
+    { name: 'Es Teh Manis Jumbo', qty: 156, revenue: 936000, image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=120&auto=format&fit=crop&q=80' }
   ];
 
   // Category breakdown calculation
@@ -387,8 +387,8 @@ export default function AdminPage() {
 
   // Dynamic greeting based on current hour
   const currentHour = new Date().getHours();
-  const greeting = currentHour < 11 ? 'Good Morning' : currentHour < 15 ? 'Good Afternoon' : currentHour < 19 ? 'Good Evening' : 'Good Night';
-  const chefName = activeAdmin?.name ? `Chef ${activeAdmin.name.split(' ')[0]}` : 'Chef Rohan';
+  const greeting = currentHour < 11 ? 'Selamat Pagi' : currentHour < 15 ? 'Selamat Siang' : currentHour < 18 ? 'Selamat Sore' : 'Selamat Malam';
+  const adminDisplayName = activeAdmin?.name || 'Administrator';
 
   // Format today date e.g. "05 Jul 2026"
   const formattedToday = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -705,9 +705,9 @@ export default function AdminPage() {
               />
               <div className="hidden sm:block text-left">
                 <p className="text-xs font-bold text-gray-900 leading-tight">
-                  {activeAdmin?.name || 'Chef Rohan'}
+                  {adminDisplayName}
                 </p>
-                <p className="text-[10px] text-gray-400 font-medium">Owner</p>
+                <p className="text-[10px] text-gray-400 font-medium">Administrator</p>
               </div>
             </div>
           </div>
@@ -724,10 +724,10 @@ export default function AdminPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-                    {greeting}, {chefName}! <span className="text-xl">🧑‍🍳</span>
+                    {greeting}, {adminDisplayName}! <span className="text-xl">🧑‍🍳</span>
                   </h1>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Here's what's happening with your food business today.
+                    Ringkasan performa dan operasional restoran Kans Resto hari ini.
                   </p>
                 </div>
 
@@ -744,7 +744,7 @@ export default function AdminPage() {
                     className="bg-[#FF5B26] hover:bg-[#E84E1C] text-white font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm shadow-[#FF5B26]/25 transition active:scale-95"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>Download Report</span>
+                    <span>Export Laporan</span>
                   </button>
 
                   {/* Add Item Button */}
@@ -753,7 +753,7 @@ export default function AdminPage() {
                     className="bg-white hover:bg-gray-50 text-gray-800 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1 border border-gray-200 shadow-2xs transition"
                   >
                     <Plus className="w-3.5 h-3.5 text-gray-600" />
-                    <span>Add Item</span>
+                    <span>Tambah Menu</span>
                   </button>
                 </div>
               </div>
@@ -768,15 +768,15 @@ export default function AdminPage() {
                       <div className="w-7 h-7 rounded-lg bg-[#FF5B26]/10 flex items-center justify-center text-[#FF5B26]">
                         <Wallet className="w-3.5 h-3.5" />
                       </div>
-                      <span className="text-[11px] font-semibold text-gray-500">Total Revenue</span>
+                      <span className="text-[11px] font-semibold text-gray-500">Total Pendapatan</span>
                     </div>
                     <h3 className="text-xl font-black text-gray-900 tracking-tight">
-                      {totalIncome > 0 ? formatRupiah(totalIncome) : '₹32,450'}
+                      {formatRupiah(totalIncome)}
                     </h3>
                     <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
                       <ArrowUp className="w-3 h-3" />
                       <span>8.2%</span>
-                      <span className="text-gray-400 font-normal ml-0.5">vs Yesterday</span>
+                      <span className="text-gray-400 font-normal ml-0.5">vs Kemarin</span>
                     </p>
                   </div>
                   {/* Mini Sparkline SVG */}
@@ -864,15 +864,15 @@ export default function AdminPage() {
                       <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
                         <DollarSign className="w-3.5 h-3.5" />
                       </div>
-                      <span className="text-[11px] font-semibold text-gray-500">Average Order Value</span>
+                      <span className="text-[11px] font-semibold text-gray-500">Rata-rata Order (AOV)</span>
                     </div>
                     <h3 className="text-xl font-black text-gray-900 tracking-tight">
-                      {aov > 0 ? formatRupiah(aov) : '₹193'}
+                      {formatRupiah(aov)}
                     </h3>
                     <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-0.5">
                       <ArrowUp className="w-3 h-3" />
                       <span>3.7%</span>
-                      <span className="text-gray-400 font-normal ml-0.5">vs Yesterday</span>
+                      <span className="text-gray-400 font-normal ml-0.5">vs Kemarin</span>
                     </p>
                   </div>
                   {/* Mini Sparkline SVG */}
@@ -942,11 +942,11 @@ export default function AdminPage() {
                   <div className="flex items-center justify-end space-x-4 text-[11px] font-semibold">
                     <div className="flex items-center space-x-1.5">
                       <span className="w-2.5 h-2.5 rounded-full bg-[#FF5B26]"></span>
-                      <span className="text-gray-600">Revenue (₹)</span>
+                      <span className="text-gray-600">Pendapatan (Rp)</span>
                     </div>
                     <div className="flex items-center space-x-1.5">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                      <span className="text-gray-600">Orders</span>
+                      <span className="text-gray-600">Pesanan</span>
                     </div>
                   </div>
 
@@ -1013,24 +1013,24 @@ export default function AdminPage() {
 
                       {/* Peak Pins */}
                       <circle cx="330" cy="45" r="4" fill="#FF5B26" stroke="#FFFFFF" strokeWidth="2" />
-                      <rect x="315" y="24" width="30" height="15" rx="4" fill="#FF5B26" />
-                      <text x="330" y="35" fontSize="9" fontWeight="bold" fill="#FFFFFF" textAnchor="middle">₹5.6K</text>
+                      <rect x="305" y="24" width="50" height="15" rx="4" fill="#FF5B26" />
+                      <text x="330" y="35" fontSize="8" fontWeight="bold" fill="#FFFFFF" textAnchor="middle">Puncak</text>
 
                       <circle cx="330" cy="75" r="4" fill="#10B981" stroke="#FFFFFF" strokeWidth="2" />
                       <rect x="320" y="85" width="20" height="15" rx="4" fill="#10B981" />
-                      <text x="330" y="96" fontSize="9" fontWeight="bold" fill="#FFFFFF" textAnchor="middle">28</text>
+                      <text x="330" y="96" fontSize="9" fontWeight="bold" fill="#FFFFFF" textAnchor="middle">{Math.max(1, Math.round(orders.length * 0.35))}</text>
                     </svg>
                   </div>
 
                   {/* X Axis Time Labels */}
                   <div className="flex justify-between text-[11px] font-semibold text-gray-400 px-6 pt-1">
-                    <span>12 AM</span>
-                    <span>4 AM</span>
-                    <span>8 AM</span>
-                    <span className="text-[#FF5B26] font-bold">12 PM</span>
-                    <span>4 PM</span>
-                    <span>8 PM</span>
-                    <span>11 PM</span>
+                    <span>10:00</span>
+                    <span>12:00</span>
+                    <span>14:00</span>
+                    <span className="text-[#FF5B26] font-bold">16:00</span>
+                    <span>18:00</span>
+                    <span>20:00</span>
+                    <span>22:00</span>
                   </div>
 
                   {/* Bottom Strip inside Card */}
@@ -1040,8 +1040,8 @@ export default function AdminPage() {
                         <Wallet className="w-3 h-3" />
                       </div>
                       <div>
-                        <p className="text-[10px] text-gray-400">Today's Revenue</p>
-                        <p className="text-xs font-bold text-gray-900">₹8,020</p>
+                        <p className="text-[10px] text-gray-400">Total Hari Ini</p>
+                        <p className="text-xs font-bold text-gray-900">{formatRupiah(totalIncome)}</p>
                       </div>
                     </div>
 
@@ -1050,8 +1050,8 @@ export default function AdminPage() {
                         <ShoppingBag className="w-3 h-3" />
                       </div>
                       <div>
-                        <p className="text-[10px] text-gray-400">Today's Orders</p>
-                        <p className="text-xs font-bold text-gray-900">32</p>
+                        <p className="text-[10px] text-gray-400">Total Pesanan</p>
+                        <p className="text-xs font-bold text-gray-900">{orders.length}</p>
                       </div>
                     </div>
 
@@ -1060,8 +1060,8 @@ export default function AdminPage() {
                         <TrendingUp className="w-3 h-3" />
                       </div>
                       <div>
-                        <p className="text-[10px] text-gray-400">Peak Revenue</p>
-                        <p className="text-xs font-bold text-gray-900">₹5,600 | 4 PM</p>
+                        <p className="text-[10px] text-gray-400">Puncak Omzet</p>
+                        <p className="text-xs font-bold text-gray-900">{formatRupiah(Math.round(totalIncome * 0.35))}</p>
                       </div>
                     </div>
 
@@ -1070,8 +1070,8 @@ export default function AdminPage() {
                         <Users className="w-3 h-3" />
                       </div>
                       <div>
-                        <p className="text-[10px] text-gray-400">Peak Orders</p>
-                        <p className="text-xs font-bold text-gray-900">28 | 4 PM</p>
+                        <p className="text-[10px] text-gray-400">Puncak Pesanan</p>
+                        <p className="text-xs font-bold text-gray-900">{Math.max(1, Math.round(orders.length * 0.35))} Order</p>
                       </div>
                     </div>
                   </div>
@@ -1368,29 +1368,30 @@ export default function AdminPage() {
                     <div className="space-y-0.5">
                       <p className="text-[11px] text-gray-400 font-medium">Top Item</p>
                       <p className="font-bold text-gray-900 truncate">
-                        {bestSellers[0]?.name || 'Paneer Butter Masala'}
+                        {bestSellers[0]?.name || (menus[0]?.name || 'Nasi Goreng Spesial')}
                       </p>
                     </div>
 
                     <div className="space-y-0.5 pt-2 border-t border-gray-50">
                       <p className="text-[11px] text-gray-400 font-medium">Best Seller</p>
                       <p className="font-bold text-gray-900 truncate">
-                        {bestSellers[1]?.name || 'Chicken Biryani'}
+                        {bestSellers[1]?.name || (menus[1]?.name || 'Ayam Bakar Madu')}
                       </p>
                     </div>
 
                     <div className="space-y-0.5 pt-2 border-t border-gray-50">
                       <p className="text-[11px] text-gray-400 font-medium">Peak Hour</p>
                       <p className="font-bold text-gray-900">
-                        1:00 PM – 2:00 PM
+                        12:00 – 14:00 WIB
                       </p>
                     </div>
                   </div>
 
-                  {/* Motivational Cheer Banner */}
-                  <div className="p-3 bg-[#FFF8F5] rounded-2xl border border-[#FFE6DC] text-center">
-                    <p className="text-xs font-semibold text-gray-700">
-                      Keep going! You're performing great today. 🎉
+                  {/* System Real-Time Status Banner */}
+                  <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center justify-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <p className="text-xs font-bold text-emerald-800">
+                      Sistem Kasir, Dapur & Meja QR Terhubung Real-Time
                     </p>
                   </div>
                 </div>
@@ -1899,7 +1900,7 @@ export default function AdminPage() {
                 <label className="block font-semibold text-gray-700 mb-1">Nama Menu</label>
                 <input
                   type="text"
-                  placeholder="Contoh: Paneer Butter Masala"
+                  placeholder="Contoh: Nasi Goreng Spesial"
                   value={menuName}
                   onChange={e => setMenuName(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-3.5 py-2.5 text-xs focus:bg-white focus:outline-none focus:border-[#FF5B26]"
@@ -1908,7 +1909,7 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block font-semibold text-gray-700 mb-1">Harga Satuan (Rp / ₹)</label>
+                <label className="block font-semibold text-gray-700 mb-1">Harga Satuan (Rp)</label>
                 <input
                   type="number"
                   placeholder="25000"
