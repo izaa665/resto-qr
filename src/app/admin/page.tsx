@@ -71,7 +71,7 @@ import {
 import { formatRupiah } from '@/lib/utils';
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'menus' | 'categories' | 'orders' | 'customers' | 'expenses' | 'tables' | 'users' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'menus' | 'orders' | 'expenses' | 'tables' | 'users' | 'settings'>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [trendRange, setTrendRange] = useState<'today' | 'week' | 'month'>('week');
   const [searchQuery, setSearchQuery] = useState('');
@@ -462,13 +462,11 @@ export default function AdminPage() {
   // Format today date e.g. "05 Jul 2026"
   const formattedToday = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
-  // Navigation Items
+  // Navigation Items (Clean & distinct without duplicates)
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
     { id: 'menus', label: 'Daftar Menu', icon: Utensils, badge: menus.length },
-    { id: 'categories', label: 'Kategori', icon: Tags },
-    { id: 'orders', label: 'Pesanan', icon: Receipt, badge: orders.length },
-    { id: 'customers', label: 'Pelanggan', icon: Users, badge: totalCustomers },
+    { id: 'orders', label: 'Riwayat Pesanan', icon: Receipt, badge: orders.length },
     { id: 'expenses', label: 'Pengeluaran', icon: Wallet },
     { id: 'tables', label: 'Meja & QR', icon: QrCode, badge: tables.length },
     { id: 'users', label: 'Staf & Shift', icon: Shield, badge: users.length },
@@ -1232,13 +1230,13 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* TAB: MENU ITEMS & CATEGORIES */}
-          {(activeTab === 'menus' || activeTab === 'categories') && (
+          {/* TAB: MENU ITEMS */}
+          {activeTab === 'menus' && (
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-3xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
                 <div>
-                  <h3 className="font-bold text-sm text-gray-900">Katalog Menu & Kategori Makanan</h3>
-                  <p className="text-xs text-gray-500">Kelola daftar menu, foto, harga, dan ketersediaan stok</p>
+                  <h3 className="font-bold text-sm text-gray-900">Daftar Menu Restoran</h3>
+                  <p className="text-xs text-gray-500">Kelola daftar menu, foto, harga, kategori, dan ketersediaan stok</p>
                 </div>
                 <button
                   onClick={() => setIsAddMenuOpen(true)}
@@ -1298,12 +1296,12 @@ export default function AdminPage() {
           )}
 
           {/* TAB: ORDERS & TRANSACTIONS */}
-          {(activeTab === 'orders' || activeTab === 'customers') && (
+          {activeTab === 'orders' && (
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-3xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
                 <div>
-                  <h3 className="font-bold text-sm text-gray-900">Riwayat Pesanan & Data Pelanggan</h3>
-                  <p className="text-xs text-gray-500">Semua transaksi yang masuk secara realtime dari Meja dan POS</p>
+                  <h3 className="font-bold text-sm text-gray-900">Riwayat Pesanan Masuk</h3>
+                  <p className="text-xs text-gray-500">Semua transaksi yang masuk secara realtime dari Meja QR dan Kasir POS</p>
                 </div>
                 <button
                   onClick={handleExportCSV}
