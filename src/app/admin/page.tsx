@@ -829,71 +829,59 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* ROW 1: 4 Key Metric Cards */}
+              {/* ROW 1: 4 Key Metric Cards (Clean, Human, No AI Slop / No Toy Icon Boxes / No Fake Percentages) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 
                 {/* 1. Total Revenue */}
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
-                  <div className="space-y-1">
-                    <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">Total Pendapatan</span>
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight">
+                <div className="bg-white rounded-xl p-5 border border-gray-200/80 shadow-xs flex flex-col justify-between">
+                  <div>
+                    <span className="text-xs font-medium text-gray-500 block">Total Pendapatan</span>
+                    <h3 className="text-2xl font-black text-gray-900 tracking-tight mt-1 font-mono">
                       {formatRupiah(totalIncome)}
                     </h3>
-                    <span className="inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                      ↑ 8.2% vs kemarin
-                    </span>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-[#FF5B26]/10 text-[#FF5B26] flex items-center justify-center shrink-0">
-                    <Wallet className="w-6 h-6" />
-                  </div>
+                  <p className="text-xs text-gray-500 mt-3 pt-2.5 border-t border-gray-100">
+                    Akumulasi transaksi selesai hari ini
+                  </p>
                 </div>
 
                 {/* 2. Total Orders */}
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
-                  <div className="space-y-1">
-                    <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">Total Pesanan</span>
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight">
-                      {totalOrdersCount} Transaksi
+                <div className="bg-white rounded-xl p-5 border border-gray-200/80 shadow-xs flex flex-col justify-between">
+                  <div>
+                    <span className="text-xs font-medium text-gray-500 block">Total Pesanan</span>
+                    <h3 className="text-2xl font-black text-gray-900 tracking-tight mt-1 font-mono">
+                      {totalOrdersCount} <span className="text-base font-normal text-gray-400">Order</span>
                     </h3>
-                    <span className="inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                      ↑ 6.2% vs kemarin
-                    </span>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
-                    <ShoppingBag className="w-6 h-6" />
-                  </div>
+                  <p className="text-xs text-gray-500 mt-3 pt-2.5 border-t border-gray-100">
+                    {completedOrders} selesai • {pendingOrders + preparingOrders} dalam antrean
+                  </p>
                 </div>
 
                 {/* 3. Average Order Value */}
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
-                  <div className="space-y-1">
-                    <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">Rata-rata Order (AOV)</span>
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight">
+                <div className="bg-white rounded-xl p-5 border border-gray-200/80 shadow-xs flex flex-col justify-between">
+                  <div>
+                    <span className="text-xs font-medium text-gray-500 block">Rata-rata Order (AOV)</span>
+                    <h3 className="text-2xl font-black text-gray-900 tracking-tight mt-1 font-mono">
                       {formatRupiah(aov)}
                     </h3>
-                    <span className="inline-flex items-center text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
-                      Per transaksi paid
-                    </span>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
-                    <Receipt className="w-6 h-6" />
-                  </div>
+                  <p className="text-xs text-gray-500 mt-3 pt-2.5 border-t border-gray-100">
+                    Rata-rata nilai per meja / transaksi
+                  </p>
                 </div>
 
                 {/* 4. Active Customers */}
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center justify-between">
-                  <div className="space-y-1">
-                    <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">Pelanggan Terlayani</span>
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight">
-                      {totalCustomers} Pelanggan
+                <div className="bg-white rounded-xl p-5 border border-gray-200/80 shadow-xs flex flex-col justify-between">
+                  <div>
+                    <span className="text-xs font-medium text-gray-500 block">Pelanggan Terlayani</span>
+                    <h3 className="text-2xl font-black text-gray-900 tracking-tight mt-1 font-mono">
+                      {totalCustomers} <span className="text-base font-normal text-gray-400">Orang</span>
                     </h3>
-                    <span className="inline-flex items-center text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
-                      Meja & Takeaway
-                    </span>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
-                    <Users className="w-6 h-6" />
-                  </div>
+                  <p className="text-xs text-gray-500 mt-3 pt-2.5 border-t border-gray-100">
+                    Total tamu santap di tempat & bungkus
+                  </p>
                 </div>
 
               </div>
@@ -1003,9 +991,8 @@ export default function AdminPage() {
                       <strong className="text-gray-900 font-mono">{peakSlot.orders} Order</strong>
                     </div>
 
-                    <div className="flex items-center space-x-2 sm:justify-end">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-gray-500 text-[11px]">Sistem Kasir & Dapur Realtime</span>
+                    <div className="flex items-center space-x-2 sm:justify-end text-xs text-gray-500">
+                      <span>Sinkronisasi Kasir & Dapur Aktif</span>
                     </div>
                   </div>
                 </div>
