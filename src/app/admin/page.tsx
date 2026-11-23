@@ -1045,29 +1045,26 @@ export default function AdminPage() {
 
               </div>
 
-              {/* ROW 3: Bottom Operational Section (3 Clean Cards) */}
+              {/* ROW 3: Bottom Operational Section (Clean, Human, No Nested Cards, No Pill Badges Everywhere) */}
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-5">
                 
                 {/* 1. Top Selling Dishes (4 cols) */}
-                <div className="xl:col-span-4 bg-white rounded-xl p-5 border border-gray-200/80 shadow-xs space-y-3 flex flex-col justify-between">
-                  <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                    <div>
-                      <h3 className="font-bold text-sm text-gray-900">Menu Terlaris</h3>
-                      <p className="text-xs text-gray-500">Peringkat menu dengan pesanan terbanyak</p>
-                    </div>
+                <div className="xl:col-span-4 bg-white rounded-xl border border-gray-200/80 shadow-xs flex flex-col justify-between overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 className="font-bold text-sm text-gray-900">Menu Terlaris</h3>
                     <button 
                       onClick={() => setActiveTab('menus')}
-                      className="text-xs font-semibold text-[#FF5B26] hover:underline transition"
+                      className="text-xs font-semibold text-gray-600 hover:text-gray-900 transition"
                     >
                       Kelola Menu
                     </button>
                   </div>
 
-                  <div className="space-y-2.5">
+                  <div className="divide-y divide-gray-100">
                     {displayDishes.slice(0, 4).map((dish, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-xs p-1.5 hover:bg-gray-50 rounded-lg transition">
-                        <div className="flex items-center space-x-2.5 min-w-0">
-                          <span className="w-5 h-5 rounded-md font-bold flex items-center justify-center text-[11px] bg-gray-100 text-gray-700 shrink-0">
+                      <div key={idx} className="p-3.5 hover:bg-gray-50/70 transition flex items-center justify-between text-xs">
+                        <div className="flex items-center space-x-3 min-w-0">
+                          <span className="font-mono text-xs font-bold text-gray-400 w-4 text-center shrink-0">
                             {idx + 1}
                           </span>
                           <img 
@@ -1076,14 +1073,14 @@ export default function AdminPage() {
                             onError={(e) => { 
                               (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120&auto=format&fit=crop&q=80'; 
                             }}
-                            className="w-9 h-9 rounded-lg object-cover border border-gray-200 shrink-0" 
+                            className="w-10 h-10 rounded-lg object-cover border border-gray-100 shrink-0" 
                           />
                           <div className="min-w-0">
                             <p className="font-semibold text-gray-900 truncate">{dish.name}</p>
-                            <p className="text-[11px] text-gray-500">{dish.qty} porsi terjual</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{dish.qty} porsi terjual</p>
                           </div>
                         </div>
-                        <span className="font-bold text-gray-900 font-mono shrink-0 ml-2">
+                        <span className="font-mono font-bold text-gray-900 shrink-0 ml-3">
                           {formatRupiah(dish.revenue)}
                         </span>
                       </div>
@@ -1092,107 +1089,99 @@ export default function AdminPage() {
                 </div>
 
                 {/* 2. Order Status Breakdown (4 cols) */}
-                <div className="xl:col-span-4 bg-white rounded-xl p-5 border border-gray-200/80 shadow-xs space-y-3 flex flex-col justify-between">
-                  <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                    <div>
-                      <h3 className="font-bold text-sm text-gray-900">Status Pesanan</h3>
-                      <p className="text-xs text-gray-500">Progres pemrosesan pesanan saat ini</p>
-                    </div>
-                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-gray-100 text-gray-700">
+                <div className="xl:col-span-4 bg-white rounded-xl border border-gray-200/80 shadow-xs p-5 flex flex-col justify-between space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <h3 className="font-bold text-sm text-gray-900">Status Pesanan Hari Ini</h3>
+                    <span className="text-xs font-semibold text-gray-600">
                       {totalOrdersCount} Total
                     </span>
                   </div>
 
                   {/* Multi-segment Bar */}
-                  <div className="space-y-2 py-1">
-                    <div className="w-full bg-gray-100 h-2.5 rounded-full flex overflow-hidden">
-                      <div style={{ width: `${completedPct}%` }} className="bg-emerald-600 h-full transition-all" title={`Selesai: ${completedOrders}`} />
-                      <div style={{ width: `${preparingPct}%` }} className="bg-amber-500 h-full transition-all" title={`Dimasak: ${preparingOrders}`} />
-                      <div style={{ width: `${pendingPct}%` }} className="bg-[#FF5B26] h-full transition-all" title={`Menunggu: ${pendingOrders}`} />
-                      <div style={{ width: `${cancelledPct}%` }} className="bg-rose-500 h-full transition-all" title={`Batal: ${cancelledOrders}`} />
+                  <div className="space-y-1.5">
+                    <div className="w-full bg-gray-100 h-2 rounded-full flex overflow-hidden">
+                      <div style={{ width: `${completedPct}%` }} className="bg-emerald-600 h-full transition-all" />
+                      <div style={{ width: `${preparingPct}%` }} className="bg-amber-500 h-full transition-all" />
+                      <div style={{ width: `${pendingPct}%` }} className="bg-[#FF5B26] h-full transition-all" />
+                      <div style={{ width: `${cancelledPct}%` }} className="bg-rose-500 h-full transition-all" />
                     </div>
                   </div>
 
-                  {/* 4 Clean Status Tiles */}
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="p-3 rounded-lg border border-gray-200 bg-gray-50/50 flex items-center justify-between">
-                      <span className="text-gray-600 font-medium">Selesai</span>
-                      <span className="font-bold text-gray-900 font-mono">{completedOrders}</span>
+                  {/* Clean 4 Status Grid */}
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 rounded-lg border border-gray-200/80 bg-gray-50/50">
+                      <p className="text-gray-500 font-medium">Selesai</p>
+                      <p className="font-mono text-lg font-bold text-gray-900 mt-1">{completedOrders}</p>
                     </div>
 
-                    <div className="p-3 rounded-lg border border-gray-200 bg-gray-50/50 flex items-center justify-between">
-                      <span className="text-gray-600 font-medium">Dimasak</span>
-                      <span className="font-bold text-gray-900 font-mono">{preparingOrders}</span>
+                    <div className="p-3 rounded-lg border border-gray-200/80 bg-gray-50/50">
+                      <p className="text-gray-500 font-medium">Dimasak</p>
+                      <p className="font-mono text-lg font-bold text-gray-900 mt-1">{preparingOrders}</p>
                     </div>
 
-                    <div className="p-3 rounded-lg border border-gray-200 bg-gray-50/50 flex items-center justify-between">
-                      <span className="text-gray-600 font-medium">Menunggu</span>
-                      <span className="font-bold text-gray-900 font-mono">{pendingOrders}</span>
+                    <div className="p-3 rounded-lg border border-gray-200/80 bg-gray-50/50">
+                      <p className="text-gray-500 font-medium">Menunggu</p>
+                      <p className="font-mono text-lg font-bold text-gray-900 mt-1">{pendingOrders}</p>
                     </div>
 
-                    <div className="p-3 rounded-lg border border-gray-200 bg-gray-50/50 flex items-center justify-between">
-                      <span className="text-gray-600 font-medium">Batal</span>
-                      <span className="font-bold text-gray-900 font-mono">{cancelledOrders}</span>
+                    <div className="p-3 rounded-lg border border-gray-200/80 bg-gray-50/50">
+                      <p className="text-gray-500 font-medium">Dibatalkan</p>
+                      <p className="font-mono text-lg font-bold text-gray-900 mt-1">{cancelledOrders}</p>
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-gray-100 text-center">
-                    <p className="text-xs text-gray-500">
-                      {completedOrders} dari {totalOrdersCount} pesanan selesai disajikan
-                    </p>
-                  </div>
+                  <p className="text-xs text-gray-500 pt-2 border-t border-gray-100">
+                    {completedOrders} dari {totalOrdersCount} pesanan telah selesai disajikan ke tamu
+                  </p>
                 </div>
 
-                {/* 3. Recent Orders Live Feed (4 cols) */}
-                <div className="xl:col-span-4 bg-white rounded-xl p-5 border border-gray-200/80 shadow-xs space-y-3 flex flex-col justify-between">
-                  <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                    <div>
-                      <h3 className="font-bold text-sm text-gray-900">Pesanan Terbaru</h3>
-                      <p className="text-xs text-gray-500">Aktivitas transaksi masuk terkini</p>
-                    </div>
+                {/* 3. Recent Orders Live Feed (4 cols) - Clean, Professional Tabular Feed */}
+                <div className="xl:col-span-4 bg-white rounded-xl border border-gray-200/80 shadow-xs flex flex-col justify-between overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 className="font-bold text-sm text-gray-900">Pesanan Terbaru</h3>
                     <button 
                       onClick={() => setActiveTab('orders')}
-                      className="text-xs font-semibold text-[#FF5B26] hover:underline transition"
+                      className="text-xs font-semibold text-gray-600 hover:text-gray-900 transition"
                     >
                       Lihat Semua
                     </button>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="divide-y divide-gray-100">
                     {orders.slice(0, 4).map(o => (
-                      <div key={o.id} className="p-2 rounded-lg border border-gray-100 hover:bg-gray-50 transition flex items-center justify-between text-xs">
-                        <div className="min-w-0 space-y-0.5">
-                          <div className="flex items-center gap-1.5">
+                      <div key={o.id} className="p-3.5 hover:bg-gray-50/70 transition flex items-center justify-between text-xs">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
                             <span className="font-mono font-bold text-gray-900">{o.order_number}</span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-gray-100 text-gray-700 font-semibold">
+                            <span className="text-gray-300">•</span>
+                            <span className="text-gray-600 font-medium">
                               {o.order_type === 'takeaway' ? 'Takeaway' : `Meja ${o.table_number || '-'}`}
                             </span>
                           </div>
-                          <p className="text-[11px] text-gray-500 truncate">{o.customer_name || 'Pelanggan'}</p>
+                          <p className="text-xs text-gray-500 mt-0.5 truncate">{o.customer_name || 'Pelanggan'}</p>
                         </div>
-                        <div className="text-right shrink-0">
+                        <div className="text-right shrink-0 ml-3">
                           <p className="font-mono font-bold text-gray-900">{formatRupiah(o.total_amount)}</p>
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md inline-block ${
-                            o.order_status === 'completed' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
-                            o.order_status === 'processing' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
-                            o.order_status === 'cancelled' ? 'bg-rose-50 text-rose-800 border border-rose-200' :
-                            'bg-orange-50 text-orange-800 border border-orange-200'
+                          <p className={`text-[11px] font-semibold mt-0.5 ${
+                            o.order_status === 'completed' ? 'text-emerald-700' :
+                            o.order_status === 'processing' ? 'text-amber-700' :
+                            o.order_status === 'cancelled' ? 'text-rose-700' :
+                            'text-[#FF5B26]'
                           }`}>
                             {o.order_status === 'completed' ? 'Selesai' :
                              o.order_status === 'processing' ? 'Dimasak' :
-                             o.order_status === 'cancelled' ? 'Batal' : 'Menunggu'}
-                          </span>
+                             o.order_status === 'cancelled' ? 'Dibatalkan' : 'Menunggu'}
+                          </p>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                    <span>Kasir & Meja QR Terhubung</span>
-                    <Link href="/kasir" className="text-[#FF5B26] font-semibold hover:underline">
-                      Buka POS Kasir →
-                    </Link>
-                  </div>
+                  {orders.length === 0 && (
+                    <div className="p-8 text-center text-xs text-gray-400">
+                      Belum ada pesanan masuk hari ini.
+                    </div>
+                  )}
                 </div>
 
               </div>
