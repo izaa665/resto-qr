@@ -131,7 +131,7 @@ export default function KitchenDashboardPage() {
         <div className="max-w-[1550px] mx-auto flex items-center justify-between gap-3">
           
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-orange-500 flex items-center justify-center text-white shadow-xs">
+            <div className="w-9 h-9 rounded-2xl bg-[#FF5B26] flex items-center justify-center text-white shadow-sm">
               <ChefHat className="w-5 h-5" />
             </div>
             <div>
@@ -229,7 +229,7 @@ export default function KitchenDashboardPage() {
               onClick={() => setFilter('pending')}
               className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition ${
                 filter === 'pending' 
-                  ? 'bg-orange-500 text-white shadow-xs' 
+                  ? 'bg-[#FF5B26] text-white shadow-xs' 
                   : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200'
               }`}
             >
@@ -423,7 +423,7 @@ export default function KitchenDashboardPage() {
                   {isPending && (
                     <button
                       onClick={() => handleUpdateStatus(order.id, 'processing')}
-                      className="grow bg-orange-500 hover:bg-orange-600 text-white font-extrabold py-2.5 rounded-2xl text-xs uppercase tracking-wider transition shadow-2xs flex items-center justify-center gap-1.5 active:scale-98"
+                      className="grow bg-[#FF5B26] hover:bg-[#e04c1a] text-white font-extrabold py-3 min-h-[44px] rounded-2xl text-xs uppercase tracking-wider transition shadow-sm flex items-center justify-center gap-1.5 active:scale-98"
                     >
                       <Flame className="w-4 h-4" />
                       <span>Mulai Masak</span>
@@ -433,7 +433,7 @@ export default function KitchenDashboardPage() {
                   {isProcessing && (
                     <button
                       onClick={() => handleUpdateStatus(order.id, 'ready')}
-                      className="grow bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-2xl text-xs uppercase tracking-wider transition shadow-2xs flex items-center justify-center gap-1.5 active:scale-98"
+                      className="grow bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 min-h-[44px] rounded-2xl text-xs uppercase tracking-wider transition shadow-sm flex items-center justify-center gap-1.5 active:scale-98"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       <span>Pesanan Siap Saji</span>
@@ -443,7 +443,7 @@ export default function KitchenDashboardPage() {
                   {isReady && (
                     <button
                       onClick={() => handleUpdateStatus(order.id, 'completed')}
-                      className="grow bg-black hover:bg-gray-800 text-white font-bold py-2.5 rounded-2xl text-xs transition active:scale-98"
+                      className="grow bg-gray-900 hover:bg-black text-white font-bold py-3 min-h-[44px] rounded-2xl text-xs transition active:scale-98"
                     >
                       Selesai (Arsip)
                     </button>
@@ -454,7 +454,7 @@ export default function KitchenDashboardPage() {
                       setSelectedTicketOrder(order);
                       setTimeout(() => window.print(), 100);
                     }}
-                    className="bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 px-3 py-2.5 rounded-2xl text-xs transition active:scale-95"
+                    className="bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 px-3.5 py-3 min-h-[44px] rounded-2xl text-xs transition active:scale-95 flex items-center justify-center"
                     title="Cetak Tiket KOT"
                   >
                     <Printer className="w-4 h-4" />

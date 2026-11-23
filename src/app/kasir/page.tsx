@@ -540,7 +540,7 @@ export default function CashierPage() {
           
           {/* Logo & Brand */}
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-xs shadow-xs">
+            <div className="w-9 h-9 rounded-2xl bg-[#FF5B26] text-white flex items-center justify-center font-black text-xs tracking-wider shadow-sm">
               KR
             </div>
             <div>
@@ -732,17 +732,19 @@ export default function CashierPage() {
                         {/* Order button or Stepper */}
                         <div className="pt-2 border-t border-gray-50 shrink-0">
                           {inCart ? (
-                            <div className="flex items-center justify-between bg-gray-100 rounded-full p-1">
+                            <div className="flex items-center justify-between bg-gray-100 rounded-full p-1 border border-gray-200">
                               <button 
                                 onClick={() => updateCartQty(item.id, -1)}
-                                className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-700 shadow-2xs hover:bg-gray-50"
+                                className="w-7 h-7 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-700 shadow-2xs hover:bg-gray-50 active:scale-90 transition"
+                                aria-label="Kurangi"
                               >
                                 -
                               </button>
                               <span className="text-xs font-black text-gray-900">{inCart.qty}</span>
                               <button 
                                 onClick={() => updateCartQty(item.id, 1)}
-                                className="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold shadow-2xs hover:bg-gray-800"
+                                className="w-7 h-7 bg-[#FF5B26] text-white rounded-full flex items-center justify-center text-xs font-bold shadow-2xs hover:bg-[#e04c1a] active:scale-90 transition"
+                                aria-label="Tambah"
                               >
                                 +
                               </button>
@@ -750,7 +752,7 @@ export default function CashierPage() {
                           ) : (
                             <button
                               onClick={() => addToCart(item)}
-                              className="w-full bg-black hover:bg-gray-800 text-white font-bold py-1.5 rounded-full text-[11px] transition active:scale-95 shadow-2xs"
+                              className="w-full bg-[#FF5B26] hover:bg-[#e04c1a] text-white font-bold py-2 min-h-[36px] rounded-full text-xs transition active:scale-95 shadow-xs flex items-center justify-center gap-1"
                             >
                               + Tambah
                             </button>
@@ -831,17 +833,19 @@ export default function CashierPage() {
                         {/* Order button or Stepper */}
                         <div className="pt-2 border-t border-gray-50 shrink-0">
                           {inCart ? (
-                            <div className="flex items-center justify-between bg-gray-100 rounded-full p-1">
+                            <div className="flex items-center justify-between bg-gray-100 rounded-full p-1 border border-gray-200">
                               <button 
                                 onClick={() => updateCartQty(item.id, -1)}
-                                className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-700 shadow-2xs hover:bg-gray-50"
+                                className="w-7 h-7 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-700 shadow-2xs hover:bg-gray-50 active:scale-90 transition"
+                                aria-label="Kurangi"
                               >
                                 -
                               </button>
                               <span className="text-xs font-black text-gray-900">{inCart.qty}</span>
                               <button 
                                 onClick={() => updateCartQty(item.id, 1)}
-                                className="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold shadow-2xs hover:bg-gray-800"
+                                className="w-7 h-7 bg-[#FF5B26] text-white rounded-full flex items-center justify-center text-xs font-bold shadow-2xs hover:bg-[#e04c1a] active:scale-90 transition"
+                                aria-label="Tambah"
                               >
                                 +
                               </button>
@@ -849,7 +853,7 @@ export default function CashierPage() {
                           ) : (
                             <button
                               onClick={() => addToCart(item)}
-                              className="w-full bg-black hover:bg-gray-800 text-white font-bold py-1.5 rounded-full text-[11px] transition active:scale-95 shadow-2xs"
+                              className="w-full bg-[#FF5B26] hover:bg-[#e04c1a] text-white font-bold py-2 min-h-[36px] rounded-full text-xs transition active:scale-95 shadow-xs flex items-center justify-center gap-1"
                             >
                               + Tambah
                             </button>

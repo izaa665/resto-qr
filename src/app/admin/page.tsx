@@ -720,9 +720,10 @@ export default function AdminPage() {
           <div className="flex items-center space-x-3 grow max-w-xl">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 mr-1"
+              className="lg:hidden w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-gray-200 mr-1 active:scale-95 transition"
+              aria-label="Buka Menu"
             >
-              <MenuIcon className="w-4 h-4" />
+              <MenuIcon className="w-5 h-5" />
             </button>
             
             <span className="font-bold text-sm text-gray-900 hidden sm:inline mr-2 capitalize">
@@ -743,16 +744,16 @@ export default function AdminPage() {
           </div>
 
           {/* Right Header Icons & Profile */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2.5">
             {/* Notification Bell */}
             <div className="relative">
               <button 
                 onClick={() => setActiveTab('orders')}
-                className="w-9 h-9 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-600 transition"
+                className="w-10 h-10 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-100 flex items-center justify-center text-gray-700 transition"
+                aria-label="Notifikasi Pesanan"
               >
                 <Bell className="w-4 h-4" />
-                <span className="absolute top-1 right-1 w-4 h-4 bg-[#FF5B26] text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white">
-                  3
+                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-[#FF5B26] rounded-full border-2 border-white">
                 </span>
               </button>
             </div>
@@ -760,7 +761,8 @@ export default function AdminPage() {
             {/* Settings Gear */}
             <button 
               onClick={() => setActiveTab('settings')}
-              className="w-9 h-9 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-600 transition"
+              className="w-10 h-10 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-100 flex items-center justify-center text-gray-700 transition"
+              aria-label="Pengaturan"
             >
               <Settings className="w-4 h-4" />
             </button>

@@ -260,7 +260,7 @@ function CustomerOrderContent() {
           
           {/* Brand Identity */}
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-black text-white flex items-center justify-center font-black text-sm tracking-wider shadow-xs">
+            <div className="w-9 h-9 rounded-2xl bg-[#FF5B26] text-white flex items-center justify-center font-black text-xs tracking-wider shadow-sm">
               KR
             </div>
             <div>
@@ -269,10 +269,10 @@ function CustomerOrderContent() {
               </h1>
               <button 
                 onClick={() => setIsTableModalOpen(true)}
-                className="text-xs font-semibold text-gray-500 hover:text-black flex items-center gap-1.5 mt-1 transition"
+                className="text-xs font-semibold text-gray-500 hover:text-[#FF5B26] flex items-center gap-1.5 mt-1 transition"
               >
                 <span>Meja {tableNumber}</span>
-                <span className="text-[10px] text-orange-700 font-bold bg-orange-50 px-1.5 py-0.2 rounded-md border border-orange-200">Ganti</span>
+                <span className="text-[10px] text-[#FF5B26] font-bold bg-[#FF5B26]/10 px-1.5 py-0.5 rounded-md border border-[#FF5B26]/20">Ganti Meja</span>
               </button>
             </div>
           </div>
@@ -340,10 +340,10 @@ function CustomerOrderContent() {
           <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar py-1">
             <button
               onClick={() => setActiveCategory('all')}
-              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition ${
+              className={`px-4 py-2.5 min-h-[44px] rounded-full text-xs font-bold whitespace-nowrap transition flex items-center justify-center ${
                 activeCategory === 'all'
-                  ? 'bg-black text-white shadow-xs'
-                  : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200'
+                  ? 'bg-[#FF5B26] text-white shadow-sm'
+                  : 'bg-white text-gray-700 hover:text-gray-900 hover:border-gray-300 border border-gray-200'
               }`}
             >
               Semua Menu
@@ -353,10 +353,10 @@ function CustomerOrderContent() {
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition ${
+                className={`px-4 py-2.5 min-h-[44px] rounded-full text-xs font-bold whitespace-nowrap transition flex items-center justify-center ${
                   activeCategory === cat.id
-                    ? 'bg-black text-white shadow-xs'
-                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200'
+                    ? 'bg-[#FF5B26] text-white shadow-sm'
+                    : 'bg-white text-gray-700 hover:text-gray-900 hover:border-gray-300 border border-gray-200'
                 }`}
               >
                 {cat.name}
@@ -373,7 +373,7 @@ function CustomerOrderContent() {
             return (
               <div
                 key={item.id}
-                className="bg-white rounded-3xl p-3.5 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition group h-[310px]"
+                className="bg-white rounded-3xl p-3.5 border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition group h-[320px]"
               >
                 <div>
                   {/* Photo Container - Fixed Uniform Proportions */}
@@ -392,7 +392,7 @@ function CustomerOrderContent() {
                   <h3 className="font-bold text-sm text-gray-900 leading-snug line-clamp-1">
                     {item.name}
                   </h3>
-                  <p className="text-xs text-gray-400 mt-1 line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">
                     {item.description || 'Pilihan menu lezat disajikan hangat dan higienis.'}
                   </p>
                 </div>
@@ -410,16 +410,18 @@ function CustomerOrderContent() {
                     <div className="flex items-center space-x-2 bg-gray-100 rounded-full p-1 border border-gray-200">
                       <button
                         onClick={() => updateItemQty(item.id, -1)}
-                        className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-700 shadow-2xs active:scale-90 transition"
+                        className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-700 shadow-2xs active:scale-90 transition hover:bg-gray-50"
+                        aria-label="Kurangi jumlah"
                       >
                         -
                       </button>
-                      <span className="w-5 text-center font-bold text-xs font-mono text-gray-900">
+                      <span className="w-6 text-center font-bold text-xs font-mono text-gray-900">
                         {inCart.qty}
                       </span>
                       <button
                         onClick={() => updateItemQty(item.id, 1)}
-                        className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold shadow-2xs active:scale-90 transition"
+                        className="w-8 h-8 bg-[#FF5B26] text-white rounded-full flex items-center justify-center text-xs font-bold shadow-2xs active:scale-90 transition hover:bg-[#e04c1a]"
+                        aria-label="Tambah jumlah"
                       >
                         +
                       </button>
@@ -427,9 +429,9 @@ function CustomerOrderContent() {
                   ) : (
                     <button
                       onClick={() => addToCart(item)}
-                      className="bg-black hover:bg-gray-800 text-white font-bold px-3.5 py-1.5 rounded-full text-xs flex items-center gap-1 transition active:scale-95 shadow-2xs"
+                      className="bg-[#FF5B26] hover:bg-[#e04c1a] text-white font-bold px-4 py-2 min-h-[40px] rounded-full text-xs flex items-center gap-1.5 transition active:scale-95 shadow-sm"
                     >
-                      <Plus className="w-3.5 h-3.5" />
+                      <Plus className="w-4 h-4" />
                       <span>Tambah</span>
                     </button>
                   )}
@@ -457,7 +459,7 @@ function CustomerOrderContent() {
             className="bg-black text-white p-4 rounded-3xl shadow-xl flex items-center justify-between cursor-pointer hover:bg-gray-900 transition active:scale-98 border border-white/10"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-orange-500 flex items-center justify-center text-white font-black text-sm shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-[#FF5B26] flex items-center justify-center text-white font-black text-sm shrink-0">
                 {totalCartQty}
               </div>
               <div>
@@ -466,7 +468,7 @@ function CustomerOrderContent() {
               </div>
             </div>
 
-            <button className="bg-white text-black font-extrabold px-4 py-2 rounded-2xl text-xs flex items-center gap-1">
+            <button className="bg-white text-gray-900 font-extrabold px-4 py-2.5 min-h-[44px] rounded-2xl text-xs flex items-center gap-1.5 active:scale-95 transition">
               <span>Lihat Pesanan</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
@@ -487,7 +489,7 @@ function CustomerOrderContent() {
               </div>
               <button 
                 onClick={() => setIsCartOpen(false)}
-                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600"
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -508,16 +510,18 @@ function CustomerOrderContent() {
                     <div className="flex items-center space-x-2 bg-white rounded-full p-1 border border-gray-200">
                       <button
                         onClick={() => updateItemQty(item.menu_id, -1)}
-                        className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-700"
+                        className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-700 hover:bg-gray-200 active:scale-90 transition"
+                        aria-label="Kurangi"
                       >
                         -
                       </button>
-                      <span className="w-5 text-center font-bold text-xs font-mono text-gray-900">
+                      <span className="w-6 text-center font-bold text-xs font-mono text-gray-900">
                         {item.qty}
                       </span>
                       <button
                         onClick={() => updateItemQty(item.menu_id, 1)}
-                        className="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold"
+                        className="w-7 h-7 bg-[#FF5B26] text-white rounded-full flex items-center justify-center text-xs font-bold hover:bg-[#e04c1a] active:scale-90 transition"
+                        aria-label="Tambah"
                       >
                         +
                       </button>
@@ -530,7 +534,7 @@ function CustomerOrderContent() {
                     placeholder="Catatan khusus (misal: pedas, tanpa es)..."
                     value={item.item_notes || ''}
                     onChange={(e) => updateItemNote(item.menu_id, e.target.value)}
-                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-[11px] text-gray-800 placeholder-gray-400 focus:outline-hidden focus:border-black"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-[11px] text-gray-800 placeholder-gray-400 focus:outline-hidden focus:border-[#FF5B26]"
                   />
                 </div>
               ))}
@@ -615,7 +619,7 @@ function CustomerOrderContent() {
               <button
                 disabled={isSubmitting || cart.length === 0}
                 onClick={handleSubmitOrder}
-                className="w-full bg-black hover:bg-gray-900 disabled:opacity-50 text-white font-extrabold py-4 rounded-2xl text-xs uppercase tracking-wider transition shadow-lg active:scale-98 flex items-center justify-center gap-2"
+                className="w-full bg-[#FF5B26] hover:bg-[#e04c1a] disabled:opacity-50 text-white font-extrabold py-4 min-h-[48px] rounded-2xl text-xs uppercase tracking-wider transition shadow-lg shadow-[#FF5B26]/25 active:scale-98 flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <span>Mengirim Pesanan...</span>
