@@ -75,6 +75,7 @@ export default function AdminPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [trendRange, setTrendRange] = useState<'today' | 'week' | 'month'>('week');
   const [searchQuery, setSearchQuery] = useState('');
+  const [tableStatusFilter, setTableStatusFilter] = useState<'all' | 'occupied' | 'empty'>('all');
 
   // Admin Auth states
   const [activeAdmin, setActiveAdmin] = useState<User | null>(null);
@@ -726,8 +727,8 @@ export default function AdminPage() {
               <MenuIcon className="w-5 h-5" />
             </button>
             
-            <span className="font-bold text-sm text-gray-900 hidden sm:inline mr-2 capitalize">
-              {activeTab}
+            <span className="font-bold text-sm text-gray-900 hidden sm:inline mr-2">
+              {navItems.find(n => n.id === activeTab)?.label || 'Dashboard'}
             </span>
 
             {/* Pill Search Box */}
@@ -1384,59 +1385,185 @@ export default function AdminPage() {
           )}
 
           {/* TAB: TABLES & QR */}
-          {activeTab === 'tables' && (
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-xl border border-gray-200/80 shadow-xs">
-                <div>
-                  <h3 className="font-bold text-sm text-gray-900">Manajemen Meja & QR Stand</h3>
-                  <p className="text-xs text-gray-500">Daftar meja restoran yang telah terpasang standing akrilik QR</p>
+          {activeTab === 'tables' && (() => {
+            const occupiedTablesCount = tables.filter(tbl => 
+              orders.some(o => o.table_number === tbl.table_number && o.order_status !== 'completed' && o.order_status !== 'cancelled')
+            ).length;
+            const emptyTablesCount = Math.max(0, tables.length - occupiedTablesCount);
+
+            const filteredTables = tables.filter(tbl => {
+              const isOccupied = orders.some(o => o.table_number === tbl.table_number && o.order_status !== 'completed' && o.order_status !== 'cancelled');
+              if (tableStatusFilter === 'occupied') return isOccupied;
+              if (tableStatusFilter === 'empty') return !isOccupied;
+              return true;
+            });
+
+            return (
+              <div className="space-y-4">
+                {/* Header Action Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-xl border border-gray-200/80 shadow-xs">
+                  <div>
+                    <h3 className="font-bold text-sm text-gray-900">Manajemen Meja & QR Restoran</h3>
+                    <p className="text-xs text-gray-500">Pantau tamu aktif per meja dan cetak standing akrilik QR Meja</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href="/qr-meja"
+                      className="bg-[#FF5B26] hover:bg-[#E84E1C] text-white font-bold px-3.5 py-2 rounded-lg text-xs flex items-center gap-1.5 transition shadow-xs"
+                    >
+                      <QrCode className="w-4 h-4" />
+                      <span>Cetak Standing Akrilik QR</span>
+                    </Link>
+                  </div>
                 </div>
-                <Link
-                  href="/qr-meja"
-                  className="bg-[#FF5B26] hover:bg-[#E84E1C] text-white font-bold px-3.5 py-2 rounded-lg text-xs flex items-center gap-1.5 transition self-start sm:self-auto shadow-xs"
-                >
-                  <QrCode className="w-4 h-4" />
-                  <span>Buka Generator Standing Akrilik QR</span>
-                </Link>
-              </div>
 
-              {/* Tables Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-                {tables.map(tbl => {
-                  const hasActiveOrder = orders.some(
-                    o => o.table_number === tbl.table_number && 
-                    o.order_status !== 'completed' && 
-                    o.order_status !== 'cancelled'
-                  );
-
-                  return (
-                    <div 
-                      key={tbl.id} 
-                      className={`p-4 rounded-xl border text-center transition ${
-                        hasActiveOrder 
-                          ? 'bg-[#FFF5F1] border-[#FF5B26]/30 text-gray-900 shadow-xs' 
-                          : 'bg-white border-gray-200/80 text-gray-900 shadow-xs'
+                {/* Status Filter Tabs */}
+                <div className="flex items-center gap-2">
+                  <div className="bg-gray-100 p-0.5 rounded-lg flex items-center text-xs">
+                    <button
+                      onClick={() => setTableStatusFilter('all')}
+                      className={`px-3 py-1.5 rounded-md transition font-medium ${
+                        tableStatusFilter === 'all'
+                          ? 'bg-white text-gray-900 font-bold shadow-2xs'
+                          : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
-                      <span className="text-[11px] font-mono font-medium text-gray-400 block mb-1">
-                        {tbl.table_code}
-                      </span>
-                      <h4 className="text-xl font-bold text-gray-900">Meja {tbl.table_number}</h4>
-                      <div className="mt-3">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-semibold ${
-                          hasActiveOrder 
-                            ? 'bg-[#FF5B26] text-white' 
-                            : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                        }`}>
-                          {hasActiveOrder ? 'Sedang Terisi' : 'Kosong / Tersedia'}
-                        </span>
+                      Semua Meja ({tables.length})
+                    </button>
+                    <button
+                      onClick={() => setTableStatusFilter('occupied')}
+                      className={`px-3 py-1.5 rounded-md transition font-medium ${
+                        tableStatusFilter === 'occupied'
+                          ? 'bg-white text-gray-900 font-bold shadow-2xs'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Sedang Terisi ({occupiedTablesCount})
+                    </button>
+                    <button
+                      onClick={() => setTableStatusFilter('empty')}
+                      className={`px-3 py-1.5 rounded-md transition font-medium ${
+                        tableStatusFilter === 'empty'
+                          ? 'bg-white text-gray-900 font-bold shadow-2xs'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Tersedia / Kosong ({emptyTablesCount})
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tables Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {filteredTables.map(tbl => {
+                    const activeOrder = orders.find(
+                      o => o.table_number === tbl.table_number && 
+                      o.order_status !== 'completed' && 
+                      o.order_status !== 'cancelled'
+                    );
+
+                    return (
+                      <div 
+                        key={tbl.id} 
+                        className={`rounded-xl border p-4 flex flex-col justify-between transition shadow-xs ${
+                          activeOrder 
+                            ? 'bg-white border-[#FF5B26]/50' 
+                            : 'bg-white border-gray-200/80 hover:border-gray-300'
+                        }`}
+                      >
+                        <div>
+                          {/* Table Header: Number & Real Status */}
+                          <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                            <div>
+                              <h4 className="font-bold text-base text-gray-900">
+                                Meja {tbl.table_number}
+                              </h4>
+                              <p className="text-[11px] text-gray-400 font-mono mt-0.5">
+                                {tbl.table_code || `MEJA-${String(tbl.table_number).padStart(2, '0')}`}
+                              </p>
+                            </div>
+
+                            <div className="text-right">
+                              {activeOrder ? (
+                                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FF5B26]">
+                                  <span className="w-2 h-2 rounded-full bg-[#FF5B26]" />
+                                  Terisi
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                                  Tersedia
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Table Details */}
+                          <div className="py-3 text-xs">
+                            {activeOrder ? (
+                              <div className="space-y-1.5">
+                                <div className="flex justify-between items-baseline">
+                                  <span className="text-gray-500">Tamu:</span>
+                                  <strong className="text-gray-900 truncate max-w-[130px]">{activeOrder.customer_name || 'Pelanggan'}</strong>
+                                </div>
+                                <div className="flex justify-between items-baseline">
+                                  <span className="text-gray-500">No. Order:</span>
+                                  <span className="font-mono font-semibold text-gray-800">#{activeOrder.order_number.slice(-4)}</span>
+                                </div>
+                                <div className="flex justify-between items-baseline">
+                                  <span className="text-gray-500">Tagihan:</span>
+                                  <span className="font-mono font-bold text-gray-900">{formatRupiah(activeOrder.total_amount)}</span>
+                                </div>
+                                <div className="flex justify-between items-baseline">
+                                  <span className="text-gray-500">Status Dapur:</span>
+                                  <span className="font-medium text-amber-700">
+                                    {activeOrder.order_status === 'processing' ? 'Sedang Dimasak' :
+                                     activeOrder.order_status === 'ready' ? 'Siap Disajikan' : 'Menunggu Antrean'}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-1 text-gray-500">
+                                <p>Kapasitas: <strong className="text-gray-800">4 Kursi</strong></p>
+                                <p>Area: <span className="text-gray-700">Ruang Makan Utama</span></p>
+                                <p className="text-[11px] text-gray-400 mt-1">Siap untuk tamu baru.</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Footer Actions */}
+                        <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                          {activeOrder ? (
+                            <Link
+                              href="/kasir"
+                              className="w-full bg-[#FF5B26] hover:bg-[#e04c1a] text-white font-bold py-2 rounded-lg text-xs text-center transition shadow-2xs"
+                            >
+                              Proses di Kasir
+                            </Link>
+                          ) : (
+                            <Link
+                              href={`/?meja=${tbl.table_number}`}
+                              target="_blank"
+                              className="w-full bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold py-2 rounded-lg text-xs text-center border border-gray-200 transition"
+                            >
+                              Buka Menu Tamu
+                            </Link>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+
+                {filteredTables.length === 0 && (
+                  <div className="p-12 text-center bg-white rounded-xl border border-gray-200 text-gray-400 text-xs">
+                    Tidak ada meja dengan filter status yang dipilih.
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* TAB: STAFF & USERS */}
           {activeTab === 'users' && (
