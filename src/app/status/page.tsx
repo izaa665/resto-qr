@@ -378,35 +378,38 @@ function StatusContent() {
             </p>
           </div>
 
-          {/* 4-Step Visual Progress Bar */}
-          <div className="grid grid-cols-4 gap-2 pt-1 text-center text-[10px] sm:text-xs font-bold">
-            <div className={`py-2.5 px-1 rounded-2xl border transition ${
-              ['pending', 'processing', 'ready', 'completed'].includes(order.order_status)
-                ? 'bg-black text-white border-black'
-                : 'bg-gray-50 text-gray-400 border-gray-200'
-            }`}>
-              1. Diterima
-            </div>
-            <div className={`py-2.5 px-1 rounded-2xl border transition ${
-              ['processing', 'ready', 'completed'].includes(order.order_status)
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-gray-50 text-gray-400 border-gray-200'
-            }`}>
-              2. Dimasak
-            </div>
-            <div className={`py-2.5 px-1 rounded-2xl border transition ${
-              ['ready', 'completed'].includes(order.order_status)
-                ? 'bg-emerald-600 text-white border-emerald-600'
-                : 'bg-gray-50 text-gray-400 border-gray-200'
-            }`}>
-              3. Siap Saji
-            </div>
-            <div className={`py-2.5 px-1 rounded-2xl border transition ${
-              order.order_status === 'completed'
-                ? 'bg-emerald-600 text-white border-emerald-600'
-                : 'bg-gray-50 text-gray-400 border-gray-200'
-            }`}>
-              4. Selesai
+          {/* 4-Step Visual Progress Stepper */}
+          <div className="pt-2">
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-2 text-center">
+              {[
+                { key: 'pending', num: '1', label: 'Diterima', activeIf: ['pending', 'processing', 'ready', 'completed'] },
+                { key: 'processing', num: '2', label: 'Dimasak', activeIf: ['processing', 'ready', 'completed'] },
+                { key: 'ready', num: '3', label: 'Siap Saji', activeIf: ['ready', 'completed'] },
+                { key: 'completed', num: '4', label: 'Selesai', activeIf: ['completed'] },
+              ].map((step, idx) => {
+                const isPassed = step.activeIf.includes(order.order_status);
+                const isCurrent = order.order_status === step.key;
+
+                return (
+                  <div
+                    key={step.key}
+                    className={`py-2 px-1 rounded-xl sm:rounded-2xl border transition flex flex-col items-center justify-center ${
+                      isCurrent
+                        ? 'bg-[#FF5B26] text-white border-[#FF5B26] shadow-xs'
+                        : isPassed
+                        ? 'bg-gray-900 text-white border-gray-900'
+                        : 'bg-gray-50 text-gray-400 border-gray-200'
+                    }`}
+                  >
+                    <span className="text-[10px] sm:text-xs font-mono font-bold leading-none mb-0.5">
+                      {isPassed && !isCurrent ? '✓' : step.num}
+                    </span>
+                    <span className="text-[10px] sm:text-xs font-bold leading-tight truncate w-full">
+                      {step.label}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
