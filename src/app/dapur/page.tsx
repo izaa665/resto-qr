@@ -130,21 +130,20 @@ export default function KitchenDashboardPage() {
       <header className="bg-white border-b border-gray-100 sticky top-0 z-30 px-4 sm:px-8 py-3.5 shadow-xs">
         <div className="max-w-[1550px] mx-auto flex items-center justify-between gap-3">
           
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-2xl bg-[#FF5B26] flex items-center justify-center text-white shadow-sm">
-              <ChefHat className="w-5 h-5" />
+          <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-[#FF5B26] flex items-center justify-center text-white shadow-xs shrink-0">
+              <ChefHat className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h1 className="font-extrabold text-sm sm:text-base tracking-tight text-gray-900 uppercase">
-                  Layar Antrean Dapur (KDS)
-                </h1>
-              </div>
-              <p className="text-[11px] text-gray-400 font-medium">Stasiun Pengolahan Makanan & Minuman</p>
+            <div className="min-w-0">
+              <h1 className="font-extrabold text-xs sm:text-base tracking-tight text-gray-900 uppercase truncate">
+                <span className="sm:hidden">Dapur KDS</span>
+                <span className="hidden sm:inline">Layar Antrean Dapur (KDS)</span>
+              </h1>
+              <p className="text-[10px] sm:text-[11px] text-gray-400 font-medium truncate">Stasiun Pengolahan Makanan & Minuman</p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
             {/* Clock */}
             <div className="hidden sm:flex items-center space-x-1.5 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-gray-700">
               <Clock className="w-3.5 h-3.5 text-orange-500" />
@@ -157,7 +156,7 @@ export default function KitchenDashboardPage() {
                 setIsAudioEnabled(!isAudioEnabled);
                 if (!isAudioEnabled) playCashierChime();
               }}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+              className={`flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
                 isAudioEnabled 
                   ? 'bg-orange-50 border-orange-200 text-orange-700' 
                   : 'bg-white border-gray-200 text-gray-400'
@@ -170,9 +169,10 @@ export default function KitchenDashboardPage() {
             {/* Link to POS */}
             <Link
               href="/kasir"
-              className="flex items-center space-x-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-black text-white hover:bg-gray-800 transition shadow-2xs"
+              className="flex items-center space-x-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-black text-white hover:bg-gray-800 transition shadow-2xs"
             >
-              <span>Layar Kasir</span>
+              <span className="hidden sm:inline">Layar Kasir</span>
+              <span className="sm:hidden">Kasir</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>

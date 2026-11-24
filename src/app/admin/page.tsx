@@ -801,9 +801,9 @@ export default function AdminPage() {
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                   {/* Date Badge */}
-                  <div className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-700 flex items-center gap-1.5 shadow-2xs">
+                  <div className="bg-white border border-gray-200 rounded-lg px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium text-gray-700 flex items-center gap-1.5 shadow-2xs">
                     <Calendar className="w-3.5 h-3.5 text-gray-400" />
                     <span>{formattedToday}</span>
                   </div>
@@ -811,75 +811,77 @@ export default function AdminPage() {
                   {/* Download Report Button */}
                   <button
                     onClick={handleExportCSV}
-                    className="bg-[#FF5B26] hover:bg-[#E84E1C] text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-xs transition active:scale-95"
+                    className="bg-[#FF5B26] hover:bg-[#E84E1C] text-white font-bold px-2.5 sm:px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-xs transition active:scale-95"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>Export Laporan</span>
+                    <span className="hidden sm:inline">Export Laporan</span>
+                    <span className="sm:hidden">Export</span>
                   </button>
 
                   {/* Add Item Button */}
                   <button
                     onClick={() => setIsAddMenuOpen(true)}
-                    className="bg-white hover:bg-gray-50 text-gray-800 font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 border border-gray-200 shadow-2xs transition"
+                    className="bg-white hover:bg-gray-50 text-gray-800 font-semibold px-2.5 sm:px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 border border-gray-200 shadow-2xs transition"
                   >
                     <Plus className="w-3.5 h-3.5 text-gray-600" />
-                    <span>Tambah Menu</span>
+                    <span className="hidden sm:inline">Tambah Menu</span>
+                    <span className="sm:hidden">Tambah</span>
                   </button>
                 </div>
               </div>
 
-              {/* ROW 1: 4 Key Metric Cards (Clean, Human, No AI Slop / No Toy Icon Boxes / No Fake Percentages) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* ROW 1: 4 Key Metric Cards (2x2 on Mobile HP, 4 cols on Desktop) */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
                 
                 {/* 1. Total Revenue */}
-                <div className="bg-white rounded-xl p-5 border border-gray-200/80 shadow-xs flex flex-col justify-between">
+                <div className="bg-white rounded-xl p-3 sm:p-5 border border-gray-200/80 shadow-xs flex flex-col justify-between">
                   <div>
-                    <span className="text-xs font-medium text-gray-500 block">Total Pendapatan</span>
-                    <h3 className="text-2xl font-black text-gray-900 tracking-tight mt-1 font-mono">
+                    <span className="text-[11px] sm:text-xs font-medium text-gray-500 block truncate">Total Pendapatan</span>
+                    <h3 className="text-base sm:text-2xl font-black text-gray-900 tracking-tight mt-1 font-mono truncate">
                       {formatRupiah(totalIncome)}
                     </h3>
                   </div>
-                  <p className="text-xs text-gray-500 mt-3 pt-2.5 border-t border-gray-100">
-                    Akumulasi transaksi selesai hari ini
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3 pt-2 sm:pt-2.5 border-t border-gray-100 truncate">
+                    Akumulasi selesai hari ini
                   </p>
                 </div>
 
                 {/* 2. Total Orders */}
-                <div className="bg-white rounded-xl p-5 border border-gray-200/80 shadow-xs flex flex-col justify-between">
+                <div className="bg-white rounded-xl p-3 sm:p-5 border border-gray-200/80 shadow-xs flex flex-col justify-between">
                   <div>
-                    <span className="text-xs font-medium text-gray-500 block">Total Pesanan</span>
-                    <h3 className="text-2xl font-black text-gray-900 tracking-tight mt-1 font-mono">
-                      {totalOrdersCount} <span className="text-base font-normal text-gray-400">Order</span>
+                    <span className="text-[11px] sm:text-xs font-medium text-gray-500 block truncate">Total Pesanan</span>
+                    <h3 className="text-base sm:text-2xl font-black text-gray-900 tracking-tight mt-1 font-mono truncate">
+                      {totalOrdersCount} <span className="text-xs sm:text-base font-normal text-gray-400">Order</span>
                     </h3>
                   </div>
-                  <p className="text-xs text-gray-500 mt-3 pt-2.5 border-t border-gray-100">
-                    {completedOrders} selesai • {pendingOrders + preparingOrders} dalam antrean
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3 pt-2 sm:pt-2.5 border-t border-gray-100 truncate">
+                    {completedOrders} selesai • {pendingOrders + preparingOrders} antre
                   </p>
                 </div>
 
                 {/* 3. Average Order Value */}
-                <div className="bg-white rounded-xl p-5 border border-gray-200/80 shadow-xs flex flex-col justify-between">
+                <div className="bg-white rounded-xl p-3 sm:p-5 border border-gray-200/80 shadow-xs flex flex-col justify-between">
                   <div>
-                    <span className="text-xs font-medium text-gray-500 block">Rata-rata Order (AOV)</span>
-                    <h3 className="text-2xl font-black text-gray-900 tracking-tight mt-1 font-mono">
+                    <span className="text-[11px] sm:text-xs font-medium text-gray-500 block truncate">Rata-rata Order</span>
+                    <h3 className="text-base sm:text-2xl font-black text-gray-900 tracking-tight mt-1 font-mono truncate">
                       {formatRupiah(aov)}
                     </h3>
                   </div>
-                  <p className="text-xs text-gray-500 mt-3 pt-2.5 border-t border-gray-100">
-                    Rata-rata nilai per meja / transaksi
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3 pt-2 sm:pt-2.5 border-t border-gray-100 truncate">
+                    Rata-rata nilai per transaksi
                   </p>
                 </div>
 
                 {/* 4. Active Customers */}
-                <div className="bg-white rounded-xl p-5 border border-gray-200/80 shadow-xs flex flex-col justify-between">
+                <div className="bg-white rounded-xl p-3 sm:p-5 border border-gray-200/80 shadow-xs flex flex-col justify-between">
                   <div>
-                    <span className="text-xs font-medium text-gray-500 block">Pelanggan Terlayani</span>
-                    <h3 className="text-2xl font-black text-gray-900 tracking-tight mt-1 font-mono">
-                      {totalCustomers} <span className="text-base font-normal text-gray-400">Orang</span>
+                    <span className="text-[11px] sm:text-xs font-medium text-gray-500 block truncate">Pelanggan Terlayani</span>
+                    <h3 className="text-base sm:text-2xl font-black text-gray-900 tracking-tight mt-1 font-mono truncate">
+                      {totalCustomers} <span className="text-xs sm:text-base font-normal text-gray-400">Orang</span>
                     </h3>
                   </div>
-                  <p className="text-xs text-gray-500 mt-3 pt-2.5 border-t border-gray-100">
-                    Total tamu santap di tempat & bungkus
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3 pt-2 sm:pt-2.5 border-t border-gray-100 truncate">
+                    Tamu santap & bungkus
                   </p>
                 </div>
 
